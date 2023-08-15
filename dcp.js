@@ -44,6 +44,8 @@ async function deployJobDCP(reqBody)
   const ks = await wallet.get();
   job.setPaymentAccountKeystore(ks);
 
+  debugger;
+
   return new Promise((resolve, reject) => {
     // start computing the job
     job.exec(slicePaymentOffer).catch(reject);
@@ -70,14 +72,18 @@ async function results(jobAddress)
   const wallet = require('dcp/wallet');
 
   // TODO: auth / keystore
-  const ks = await wallet.get();
+  /**
+   *  Interesting note, the id keystore is required to send these messages. But I can be in control of it!?
+   *  Hmm.... very interesting....
+   */
+  const idks = await wallet.getId();
 
-  const conn = new protocol.Connection(dcpConfig.scheduler.services.resultSubmitter.location, ks);
+  const conn = new protocol.Connection(dcpConfig.scheduler.services.resultSubmitter.location, idks);
 
   const { success, payload } = await conn.send('fetchResult', {
-    job: jobAddress,
-    owner: (await wallet.get()).address,
-  },  await wallet.get());
+    job: new wallet.Address(jobAddress),
+    owner: (await wallet.getId()).address,
+  }, idks);
 
   console.log(payload);
 
