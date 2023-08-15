@@ -45,9 +45,12 @@ app.post('/job', jobValidationRules(), validate, async (req, res) => {
 });
 
 // return job results
-app.get('/job/:id/result', (req, res) => {
+/**
+ * TODO: it would be AWESOME if I could say which slices have not been returned yet
+ */
+app.get('/job/:id/result', async (req, res) => {
   const jobAddress = req.params.id;
-  const results = dcp.results(jobAddress);
+  const results = await dcp.results(jobAddress);
   res.send(results);
 });
 

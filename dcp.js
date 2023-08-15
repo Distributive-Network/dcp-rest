@@ -1,4 +1,5 @@
 const dcp = require('dcp-client');
+const kvin = require('kvin');
 const SCHEDULER_URL = new URL('https://scheduler.distributed.computer');
 
 function init()
@@ -85,7 +86,10 @@ async function results(jobAddress)
     owner: (await wallet.getId()).address,
   }, idks);
 
-  console.log(payload);
+  for (let i = 0; i < payload.length; i++)
+  {
+    payload[i].value = kvin.deserialize(payload[i].value.split('data:application/x-kvin,')[1])
+  }
 
   return payload;
 }
