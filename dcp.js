@@ -175,7 +175,7 @@ async function cancelJob(jobAddress, reqBody, bearer)
   return payload;
 }
 
-async function listJobs(bearer)
+async function countJobs(bearer)
 {
   const dcpConfig = require('dcp/dcp-config');
   const protocol = require('dcp/protocol');
@@ -191,7 +191,6 @@ async function listJobs(bearer)
 
   return payload;
 }
-
 
 // auth
 async function getOAuthId(bearer)
@@ -215,6 +214,7 @@ exports.deployJobDCP = deployJobDCP;
 exports.results      = results;
 exports.status       = status;
 exports.cancelJob    = cancelJob;
-exports.listJobs     = listJobs;
+exports.countJobs    = countJobs;
+//exports.listJobs     = listJobs;
 exports.init         = init;
 

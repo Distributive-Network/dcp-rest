@@ -67,7 +67,7 @@ app.delete('/job/:id', async (req, res) => {
 });
 
 app.get('/jobs/count', async (req, res) => {
-  const jobList = await dcp.listJobs(req.headers.authorization);
+  const jobList = await dcp.countJobs(req.headers.authorization);
   res.send(jobList);
 });
 
