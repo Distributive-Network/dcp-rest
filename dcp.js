@@ -111,14 +111,13 @@ async function results(jobAddress, bearer)
 
   // caveat with the id... can only use it for jobs deployed with this oauth token, this is bad - but whatever
   // it will change in the future
-  const idks = getOAuthId(bearer);
-
-  const conn = new protocol.Connection(dcpConfig.scheduler.services.resultSubmitter.location, idks);
+  const idKs = await getOAuthId(bearer);
+  const conn = new protocol.Connection(dcpConfig.scheduler.services.resultSubmitter.location, idKs);
 
   const { success, payload } = await conn.send('fetchResult', {
     job: new wallet.Address(jobAddress),
-    owner: idks,
-  }, idks);
+    owner: new wallet.Address(idKs.address),
+  }, idKs);
 
   for (let i = 0; i < payload.length; i++)
     payload[i].value = kvin.deserialize(payload[i].value.split('data:application/x-kvin,')[1])
