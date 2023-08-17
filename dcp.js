@@ -205,9 +205,9 @@ async function listJobs(reqBody, bearer)
   const signedMessage = await bankKs.makeSignedMessage({ address: bankKs.address });
 
   const idKs = await getOAuthId(bearer);
-  const conn = new protocol.Connection(dcpConfig.scheduler.services.pheme.location, idKs);
+  const phemeConnection = new protocol.Connection(dcpConfig.scheduler.services.pheme.location, idKs);
 
-  const jobResponse = await conn.send('fetchJobsByAccount', {
+  const jobResponse = await phemeConnection.send('fetchJobsByAccount', {
     signedMessage: signedMessage,
     paymentAccount: bankKs.address,
   }).then(response => {
@@ -218,6 +218,46 @@ async function listJobs(reqBody, bearer)
 
   delete jobResponse.payload.preauthToken;
   return jobResponse.payload;
+}
+
+async function getPendingPayment(reqBody, bearer)
+{
+  const dcpConfig = require('dcp/dcp-config');
+  const protocol = require('dcp/protocol');
+  const wallet = require('dcp/wallet');
+
+  const accounts = await getBankAccounts(reqBody, bearer);
+  const bankKs = await unlockBankAccount(accounts, reqBody.account.address, reqBody.account.password);
+
+  // Make signed message to confirm ownership of keystore
+  const signedMessage = await bankKs.makeSignedMessage({ address: bankKs.address });
+
+  const idKs = await getOAuthId(bearer);
+  const phemeConnection = new protocol.Connection(dcpConfig.scheduler.services.pheme.location, idKs);
+  const bankTellerConnection = new protocol.Connection(dcpConfig.bank.services.bankTeller.location, idKs);
+
+  const jobResponse = await phemeConnection.send('fetchJobsByAccount', {
+    signedMessage: signedMessage,
+    paymentAccount: bankKs.address,
+  }).then(response => {
+    if (!response.success)
+      throw payloadError(response, new Error("Operation 'fetchJobsByAccount' failed"));
+    return response;
+  });
+
+
+  // Gets the sum of all pending payments for all jobs associated with the account
+  const pendingPayments = await bankTellerConnection.send('viewPendingPayments', {
+    preauthToken: jobResponse.payload.preauthToken,
+  }).then(response => {
+    if (!response.success)
+      throw payloadError(response, new Error("Operation 'viewPendingPayments' failed"));
+    return response;
+  });
+  const {totalPendingPayments} = pendingPayments.payload
+
+  return totalPendingPayments;
+
 }
 
 // auth
