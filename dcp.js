@@ -7,6 +7,38 @@ function init()
   return dcp.init(SCHEDULER_URL);
 }
 
+// unlock bank account
+async function unlockBankAccount(bankAccounts, address, password)
+{
+  const wallet = require('dcp/wallet');
+
+  // try to find the account in the list of bankAccounts
+  for (const i in bankAccounts)
+  {
+    if (wallet.Address(bankAccounts[i].address).eq(address))
+    {
+      const ks = await new wallet.Keystore(bankAccounts[i]);
+      await ks.unlock(password, 1000, true);
+      return ks;
+    }
+  }
+
+  return null;
+}
+
+// get the accounts associated with the portal user
+async function getBankAccounts(reqBody, bearer)
+{
+  const wallet = require('dcp/wallet');
+  const protocol = require('dcp/protocol');
+
+  const idKs = await getOAuthId(bearer);
+  const portalConnection = new protocol.Connection(dcpConfig.portal, idKs);
+  const response = await portalConnection.send('viewKeystores', {});
+
+  return response.payload;
+}
+
 // creates a job and parses body into compute.for args
 function computeFor(reqBody)
 {
@@ -30,23 +62,28 @@ function computeFor(reqBody)
   return job
 }
 
-async function deployJobDCP(reqBody)
+async function deployJobDCP(reqBody, bearer)
 {
   const compute = require('dcp/compute');
   const wallet = require('dcp/wallet');
+  const protocol = require('dcp/protocol');
 
+  // specify the ID keystore for the job
+  const oauthId = await getOAuthId(bearer);
+  wallet.addId(oauthId);
+
+  // instantiate new job object with options
   const job = computeFor(reqBody);
-
   var slicePaymentOffer = compute.marketValue;
   if (typeof reqBody.slicePaymentOffer === 'number')
     slicePaymentOffer = reqBody.slicePaymentOffer;
 
-  // TODO: auth / keystore
-  const ks = await wallet.get();
-  job.setPaymentAccountKeystore(ks);
+  // find the bank account and try to unlock it
+  const accounts = await getBankAccounts(reqBody, bearer);
+  const bankKs = await unlockBankAccount(accounts, reqBody.account.address, reqBody.account.password);
+  job.setPaymentAccountKeystore(bankKs);
 
-  debugger;
-
+  // kick off the job and see if it gets accepted
   return new Promise((resolve, reject) => {
     // start computing the job
     job.exec(slicePaymentOffer).catch(reject);
@@ -65,33 +102,44 @@ async function deployJobDCP(reqBody)
 }
 
 // get results
-async function results(jobAddress)
+async function results(jobAddress, bearer)
 {
   const utils = require('dcp/utils');
   const dcpConfig = require('dcp/dcp-config');
   const protocol = require('dcp/protocol');
   const wallet = require('dcp/wallet');
 
-  // TODO: auth / keystore
-  /**
-   *  Interesting note, the id keystore is required to send these messages. But I can be in control of it!?
-   *  Hmm.... very interesting....
-   */
-  const idks = await wallet.getId();
+  // caveat with the id... can only use it for jobs deployed with this oauth token, this is bad - but whatever
+  // it will change in the future
+  const idks = getOAuthId(bearer);
 
   const conn = new protocol.Connection(dcpConfig.scheduler.services.resultSubmitter.location, idks);
 
   const { success, payload } = await conn.send('fetchResult', {
     job: new wallet.Address(jobAddress),
-    owner: (await wallet.getId()).address,
+    owner: idks,
   }, idks);
 
   for (let i = 0; i < payload.length; i++)
-  {
     payload[i].value = kvin.deserialize(payload[i].value.split('data:application/x-kvin,')[1])
-  }
 
   return payload;
+}
+
+// auth
+async function getOAuthId(bearer)
+{
+  const wallet = require('dcp/wallet');
+  const tokenStr = bearer.split('Bearer ')[1];
+  const tokenObj = JSON.parse(decodeURIComponent(escape(Buffer.from(tokenStr, 'base64').toString())));
+  const idKs = await new wallet.IdKeystore(tokenObj.keystore); // change to extract from token
+  await idKs.unlock(tokenObj.accessToken, 1000, true);
+
+  wallet.passphrasePrompt = (message) => {
+    return token.accessToken;
+  };
+
+  return idKs;
 }
 
 // exports

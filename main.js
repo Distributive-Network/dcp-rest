@@ -28,13 +28,14 @@ function jobValidationRules ()
     body('slices').exists().withMessage('One of these must exist: slices.array, slices.range, or slices.remoteDataSet.'),
     body('work').exists().withMessage('Need to send both work.function and work.function.'),
     body('args').optional().isArray().withMessage('args must be an array'),
+    body('account').exists().withMessage('Need to send an account.address and optionally account.password if it has one'),
   ];
 }
 
 app.post('/job', jobValidationRules(), validate, async (req, res) => {
   var jobAddress;
   try {
-    jobAddress = await dcp.deployJobDCP(req.body);
+    jobAddress = await dcp.deployJobDCP(req.body, req.headers.authorization);
   }
   catch (error){
     res.status(400);
@@ -47,10 +48,12 @@ app.post('/job', jobValidationRules(), validate, async (req, res) => {
 // return job results
 /**
  * TODO: it would be AWESOME if I could say which slices have not been returned yet
+ * TODO: should probably accept sliceNumber array or range to return specific data
+ * or paginated data. 
  */
 app.get('/job/:id/result', async (req, res) => {
   const jobAddress = req.params.id;
-  const results = await dcp.results(jobAddress);
+  const results = await dcp.results(jobAddress, req.headers.authorization);
   res.send(results);
 });
 
