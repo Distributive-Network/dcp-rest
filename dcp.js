@@ -125,6 +125,29 @@ async function results(jobAddress, bearer)
   return payload;
 }
 
+// get status
+async function status(jobAddress, bearer)
+{
+  const utils = require('dcp/utils');
+  const dcpConfig = require('dcp/dcp-config');
+  const protocol = require('dcp/protocol');
+  const wallet = require('dcp/wallet');
+
+  const idKs = await getOAuthId(bearer);
+  const conn = new protocol.Connection(dcpConfig.scheduler.services.pheme.location, idKs);
+
+  debugger;
+
+  const { success, payload } = await conn.send('fetchJobReport', {
+    job: new wallet.Address(jobAddress),
+    jobOwner: new wallet.Address(idKs.address),
+  }, idKs);
+
+  console.log(payload);
+
+  return payload;
+}
+
 // auth
 async function getOAuthId(bearer)
 {
@@ -144,5 +167,6 @@ async function getOAuthId(bearer)
 // exports
 exports.deployJobDCP = deployJobDCP;
 exports.results      = results;
+exports.status       = status;
 exports.init         = init;
 

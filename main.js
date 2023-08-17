@@ -57,5 +57,12 @@ app.get('/job/:id/result', async (req, res) => {
   res.send(results);
 });
 
+// job status
+app.get('/job/:id/status', async (req, res) => {
+  const jobAddress = req.params.id;
+  const jobStatus = await dcp.status(jobAddress, req.headers.authorization);
+  res.send(jobStatus);
+});
+
 dcp.init().then(() => app.listen(1234));
 
