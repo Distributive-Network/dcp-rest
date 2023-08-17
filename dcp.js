@@ -122,7 +122,17 @@ async function results(jobAddress, bearer)
   for (let i = 0; i < payload.length; i++)
     payload[i].value = kvin.deserialize(payload[i].value.split('data:application/x-kvin,')[1])
 
-  return payload;
+  // get the number of slices so far
+  const jobStatus = await status(jobAddress, bearer);
+
+  // respond with the status
+  const response = {};
+  response.totalSlices = jobStatus.totalSlices;
+  response.completedSlices = jobStatus.completedSlices;
+  response.activeSlices = jobStatus.activeSlices;
+  response.slices = payload;
+
+  return response;
 }
 
 // get status

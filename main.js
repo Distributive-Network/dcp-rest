@@ -46,11 +46,6 @@ app.post('/job', jobValidationRules(), validate, async (req, res) => {
 });
 
 // return job results
-/**
- * TODO: it would be AWESOME if I could say which slices have not been returned yet
- * TODO: should probably accept sliceNumber array or range to return specific data
- * or paginated data. 
- */
 app.get('/job/:id/result', async (req, res) => {
   const jobAddress = req.params.id;
   const results = await dcp.results(jobAddress, req.headers.authorization);
