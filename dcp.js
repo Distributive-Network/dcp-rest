@@ -1,5 +1,7 @@
 const dcp = require('dcp-client');
 const kvin = require('kvin');
+const workFunctionTransformer = require('./work-function');
+
 const SCHEDULER_URL = new URL('https://scheduler.distributed.computer');
 
 function init()
@@ -48,7 +50,9 @@ function computeFor(reqBody)
   const data = reqBody.slices;
 
   // work function
-  const workFunction = reqBody.work.function;
+  const workFunction = workFunctionTransformer.setup(reqBody.work).workFunction;
+
+debugger;
 
   // call compute.for
   const job = compute.for(data, workFunction, reqBody.args);
@@ -257,7 +261,6 @@ async function getPendingPayment(reqBody, bearer)
   const {totalPendingPayments} = pendingPayments.payload
 
   return totalPendingPayments;
-
 }
 
 // auth
