@@ -104,7 +104,6 @@ async function deployJobDCP(reqBody, bearer)
 // get results
 async function results(jobAddress, bearer)
 {
-  const utils = require('dcp/utils');
   const dcpConfig = require('dcp/dcp-config');
   const protocol = require('dcp/protocol');
   const wallet = require('dcp/wallet');
@@ -138,7 +137,6 @@ async function results(jobAddress, bearer)
 // get status
 async function status(jobAddress, bearer)
 {
-  const utils = require('dcp/utils');
   const dcpConfig = require('dcp/dcp-config');
   const protocol = require('dcp/protocol');
   const wallet = require('dcp/wallet');
@@ -146,14 +144,33 @@ async function status(jobAddress, bearer)
   const idKs = await getOAuthId(bearer);
   const conn = new protocol.Connection(dcpConfig.scheduler.services.pheme.location, idKs);
 
-  debugger;
-
   const { success, payload } = await conn.send('fetchJobReport', {
     job: new wallet.Address(jobAddress),
     jobOwner: new wallet.Address(idKs.address),
   }, idKs);
 
   console.log(payload);
+
+  return payload;
+}
+
+// cancel a job
+async function cancelJob(jobAddress, reqBody, bearer)
+{
+  const dcpConfig = require('dcp/dcp-config');
+  const protocol = require('dcp/protocol');
+  const wallet = require('dcp/wallet');
+
+  const idKs = await getOAuthId(bearer);
+  const conn = new protocol.Connection(dcpConfig.scheduler.services.jobSubmit.location, idKs)
+
+  const reason = reqBody.reason;
+
+  const { success, payload } = await conn.send('cancelJob', {
+    job: new wallet.Address(jobAddress),
+//    jobOwner: new wallet.Address(idKs.address),
+    reason: reason,
+  }, idKs);
 
   return payload;
 }
@@ -178,5 +195,6 @@ async function getOAuthId(bearer)
 exports.deployJobDCP = deployJobDCP;
 exports.results      = results;
 exports.status       = status;
+exports.cancelJob    = cancelJob;
 exports.init         = init;
 

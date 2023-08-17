@@ -59,5 +59,12 @@ app.get('/job/:id/status', async (req, res) => {
   res.send(jobStatus);
 });
 
+// cancel a job
+app.delete('/job/:id', async (req, res) => {
+  const jobAddress = req.params.id;
+  const jobCancellation = await dcp.cancelJob(jobAddress, req.body, req.headers.authorization) 
+  res.send(jobCancellation);
+});
+
 dcp.init().then(() => app.listen(1234));
 
