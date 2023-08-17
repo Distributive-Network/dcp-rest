@@ -175,10 +175,29 @@ async function cancelJob(jobAddress, reqBody, bearer)
   return payload;
 }
 
+async function listJobs(bearer)
+{
+  const dcpConfig = require('dcp/dcp-config');
+  const protocol = require('dcp/protocol');
+  const wallet = require('dcp/wallet');
+
+  const idKs = await getOAuthId(bearer);
+  const conn = new protocol.Connection(dcpConfig.scheduler.services.pheme.location, idKs);
+
+  const { success, payload } = await conn.send('countJobs', {
+    jobOwner: new wallet.Address(idKs.address).address,
+    isSelectingAll: false,
+  }, idKs);
+
+  return payload;
+}
+
+
 // auth
 async function getOAuthId(bearer)
 {
   const wallet = require('dcp/wallet');
+
   const tokenStr = bearer.split('Bearer ')[1];
   const tokenObj = JSON.parse(decodeURIComponent(escape(Buffer.from(tokenStr, 'base64').toString())));
   const idKs = await new wallet.IdKeystore(tokenObj.keystore); // change to extract from token
@@ -196,5 +215,6 @@ exports.deployJobDCP = deployJobDCP;
 exports.results      = results;
 exports.status       = status;
 exports.cancelJob    = cancelJob;
+exports.listJobs     = listJobs;
 exports.init         = init;
 
