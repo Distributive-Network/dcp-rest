@@ -80,5 +80,9 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, './index.html'));
 });
 
+app.get('/accounts', async (req, res) => {
+  res.send(await dcp.getAccounts({}, req.headers.authorization));
+});
+
 dcp.init().then(() => app.listen(1234));
 

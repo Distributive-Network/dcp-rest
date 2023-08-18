@@ -293,5 +293,6 @@ exports.status       = status;
 exports.cancelJob    = cancelJob;
 exports.countJobs    = countJobs;
 exports.listJobs     = listJobs;
+exports.getAccounts  = getBankAccounts;
 exports.init         = init;
 

@@ -75,6 +75,11 @@ Request Body:
 Path: `/job/[id]/status`
 Method: `GET`
 
+### Get bank accounts
+Path: `/accounts`
+Method: `GET`
+Description: returns a list of all the user's bank accounts
+
 ### Getting results
 Path: `/job/[id]/result`
 Method: `GET`
