@@ -9,7 +9,7 @@ function setupWorkFunction(workObj)
     return { workFunction };
 
   else if (['py', 'python'].includes(language))
-    return setupPython(workFunction);
+    return setupPython(workObj);
 
   else if (['ts', 'typescript'].includes(language))
     return { workFunction: compileTypeScript(workFunction) };
@@ -38,8 +38,31 @@ function compileTypeScript(workFunction)
   return cleanedCode;  
 }
 
-function setupPython(workFunction)
+function setupPython(workObj)
 {
+  const workFunction = workObj.function;
+  const pyimports    = workObj.pyimports
+
+  const packages=[
+    'scipy', 'kiwisolver', 'joblib', 'clapack',
+    'setuptools', 'cycler', 'pyparsing', 'threadpoolctl',
+    'pyerfa', 'distutils', 'python-dateutil', 'fonttools',
+    'pillow', 'pytz', 'pyyaml', 'numpy', 'packaging',
+    'numpy', 'opencv-python', 'scikit-learn',
+    'distutils', 'xgboost', 'astropy', 'matplotlib',
+    'pandas', 'PIL', 'distutils',
+  ];
+
+  var injectableImports = "await pyodideCore.loadPackage ([";
+  for (const i in pyimports) {
+    if (!packages.includes(pyimports[i]))
+      throw new Error(`${pyimports[i]} is not supported in dcp yet`);
+    injectableImports = injectableImports + `"${pyimports[i]}",`;
+  }
+  injectableImports+="]);";
+  if (!pyimports || pyimports.length === 0)
+    injectableImports = "";
+
   function extractFirstFunctionName(input)
   {
       const match = /def (\w+)\(/.exec(input);
@@ -55,6 +78,8 @@ function setupPython(workFunction)
       progress(0.5);
       const pyodide = await pyodideCore.pyodideInit();
 
+      ${injectableImports}
+
       const res = pyodide.runPython(\`${workFunction}
         \`);
 
@@ -65,6 +90,8 @@ function setupPython(workFunction)
       return workFunction(datum);
     }
   `;
+
+  console.log(jsWrapper);
 
   return { workFunction: jsWrapper, requires: [ 'pyodide-core/pyodide-core.js' ] };
 }

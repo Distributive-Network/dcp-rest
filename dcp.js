@@ -63,8 +63,11 @@ function computeFor(reqBody)
   job.public        = reqBody.public        || {};
 
   // add requirements to the job
-  const jobRequires = reqBody.requires || [];
-  job.requires(jobRequires.concat(additionalRequires));
+  var jobRequires = reqBody.requires || [];
+  jobRequires = jobRequires.concat(additionalRequires);
+
+  if ((reqBody.requires && reqBody.requires.length > 0) || (additionalRequires && additionalRequires.length > 0))
+    job.requires(jobRequires);
 
   return job
 }
@@ -89,12 +92,6 @@ async function deployJobDCP(reqBody, bearer)
   const accounts = await getBankAccounts(reqBody, bearer);
   const bankKs = await unlockBankAccount(accounts, reqBody.account.address, reqBody.account.password);
   job.setPaymentAccountKeystore(bankKs);
-
-/*
-  job.requires([
-    'pyodide-core/pyodide-core.js'
-  ]);
-*/
 
   // kick off the job and see if it gets accepted
   return new Promise((resolve, reject) => {
