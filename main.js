@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const dcp = require('./dcp');
-
+const path = require('path');
 const express = require('express');
 
 const body             = require('express-validator').body;
@@ -77,7 +77,7 @@ app.get('/jobs/count', async (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  res.send('hello world');
+  res.sendFile(path.join(__dirname, './index.html'));
 });
 
 dcp.init().then(() => app.listen(1234));
