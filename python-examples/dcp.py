@@ -1,7 +1,6 @@
 import requests
 import os
 import json
-import pdb
 
 API_URL="http://localhost:1234/"
 

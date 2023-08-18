@@ -60,7 +60,7 @@ function setupPython(workObj)
     injectableImports = injectableImports + `"${pyimports[i]}",`;
   }
   injectableImports+="]);";
-  if (!pyimports || pyimports.length === 0)
+  if (!pyimports || (pyimports && pyimports.length === 0))
     injectableImports = "";
 
   function extractFirstFunctionName(input)
