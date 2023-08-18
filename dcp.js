@@ -50,9 +50,9 @@ function computeFor(reqBody)
   const data = reqBody.slices;
 
   // work function
-  const workFunction = workFunctionTransformer.setup(reqBody.work).workFunction;
-
-debugger;
+  const work = workFunctionTransformer.setup(reqBody.work);
+  const workFunction = work.workFunction;
+  const additionalRequires = work.requires || [];
 
   // call compute.for
   const job = compute.for(data, workFunction, reqBody.args);
@@ -61,7 +61,10 @@ debugger;
   job.computeGroups = reqBody.computeGroups || job.computeGroups;
   job.requirements  = reqBody.requirements  || [];
   job.public        = reqBody.public        || {};
-  job.requires      = reqBody.requires      || [];
+
+  // add requirements to the job
+  const jobRequires = reqBody.requires || [];
+  job.requires(jobRequires.concat(additionalRequires));
 
   return job
 }
@@ -86,6 +89,12 @@ async function deployJobDCP(reqBody, bearer)
   const accounts = await getBankAccounts(reqBody, bearer);
   const bankKs = await unlockBankAccount(accounts, reqBody.account.address, reqBody.account.password);
   job.setPaymentAccountKeystore(bankKs);
+
+/*
+  job.requires([
+    'pyodide-core/pyodide-core.js'
+  ]);
+*/
 
   // kick off the job and see if it gets accepted
   return new Promise((resolve, reject) => {

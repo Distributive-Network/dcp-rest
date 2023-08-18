@@ -76,5 +76,9 @@ app.get('/jobs/count', async (req, res) => {
   res.send(jobList);
 });
 
+app.get('/', (req, res) => {
+  res.send('hello world');
+});
+
 dcp.init().then(() => app.listen(1234));
 

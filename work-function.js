@@ -9,7 +9,7 @@ function setupWorkFunction(workObj)
     return { workFunction };
 
   else if (['py', 'python'].includes(language))
-    throw new Error(`DCP-API does not support ${language} yet.`);
+    return setupPython(workFunction);
 
   else if (['ts', 'typescript'].includes(language))
     return { workFunction: compileTypeScript(workFunction) };
@@ -36,6 +36,37 @@ function compileTypeScript(workFunction)
   const cleanedCode = result.outputText.replace(/;\s*$/, '');
 
   return cleanedCode;  
+}
+
+function setupPython(workFunction)
+{
+  function extractFirstFunctionName(input)
+  {
+      const match = /def (\w+)\(/.exec(input);
+      return match ? match[1] : null;
+  }
+
+  const pyFunctionName = extractFirstFunctionName(workFunction);
+
+  const jsWrapper = `
+    async function workFunction (datum) {
+      progress();
+      const pyodideCore = require('pyodide-core.js');
+      progress(0.5);
+      const pyodide = await pyodideCore.pyodideInit();
+
+      const res = pyodide.runPython(\`${workFunction}
+        \`);
+
+      if (res)
+        return res(datum);
+
+      const workFunction = pyodide.globals.get("${pyFunctionName}");
+      return workFunction(datum);
+    }
+  `;
+
+  return { workFunction: jsWrapper, requires: [ 'pyodide-core/pyodide-core.js' ] };
 }
 
 exports.setup = setupWorkFunction;
