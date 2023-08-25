@@ -84,5 +84,9 @@ app.get('/accounts', async (req, res) => {
   res.send(await dcp.getAccounts({}, req.headers.authorization));
 });
 
+app.get('/identity', async (req, res) => {
+  res.send(await dcp.getIdentity(req.headers.authorization));
+});
+
 dcp.init().then(() => app.listen(1234));
 

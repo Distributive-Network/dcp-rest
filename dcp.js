@@ -286,6 +286,19 @@ async function getOAuthId(bearer)
   return idKs;
 }
 
+// kube yaml
+async function getIdentity(bearer)
+{
+  const wallet = require('dcp/wallet');
+  const protocol = require('dcp/protocol');
+
+  const idKs = await getOAuthId(bearer);
+  const portalConnection = new protocol.Connection(dcpConfig.portal, idKs);
+  const response = await portalConnection.send('getUserInfo', {});
+
+  return response.payload.id;
+}
+
 // exports
 exports.deployJobDCP = deployJobDCP;
 exports.results      = results;
@@ -295,4 +308,5 @@ exports.countJobs    = countJobs;
 exports.listJobs     = listJobs;
 exports.getAccounts  = getBankAccounts;
 exports.init         = init;
+exports.getIdentity  = getIdentity;
 
