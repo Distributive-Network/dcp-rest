@@ -88,5 +88,9 @@ app.get('/identity', async (req, res) => {
   res.send(await dcp.getIdentity(req.headers.authorization));
 });
 
+app.get('/kube', async (req, res) => {
+  res.sendFile(path.join(__dirname, './kube.html'));
+});
+
 dcp.init().then(() => app.listen(1234));
 

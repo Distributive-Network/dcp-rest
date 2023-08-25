@@ -17,7 +17,7 @@
 async function main() {
   const loginBtn = document.getElementById('someButton');
   // make button open a popup with the configured oauth server's reflector page
-  loginBtn.onclick = () => window.open(dcpConfig.oAuth.location.resolve('/reflector'), 'DCP Login', 'popup=yes,left=200,top=200,width=400,height=360')
+  loginBtn.onclick = () => window.open(dcpConfig.oAuth.location.resolve('/reflector/'), 'DCP Login', 'popup=yes,left=200,top=200,width=400,height=360')
 
   let loginks = 'none';
 
