@@ -80,7 +80,7 @@ app.get('/', function (req, res) {
 
           // Inserting data
           let stmt = db.prepare("INSERT INTO users VALUES (?, ?, ?)");
-          stmt.run([user.data.email, user.data.accessToken, user.data.keystore]);
+          stmt.run([user.data.email, user.accessToken, user.data.keystore]);
           stmt.finalize();
 
           // Close the database connection
