@@ -1,11 +1,25 @@
 #!/usr/bin/env node
 
+const { config } = require('dotenv');
+const { expand } = require('dotenv-expand');
+
 const dcp = require('./dcp');
 const path = require('path');
 const express = require('express');
 
+const port = 1234;
+
 const body             = require('express-validator').body;
 const validationResult = require('express-validator').validationResult;
+
+expand(config());
+expand(
+  config({
+    path: path.resolve(process.cwd(), ".env"),
+    override: true,
+  })
+);
+
 
 const app = express();
 app.use(express.json());
@@ -77,7 +91,7 @@ app.get('/jobs/count', async (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, './index.html'));
+  res.send(`Generate an API token here: ${process.env.LOCKSMITH_URL}`);
 });
 
 app.get('/accounts', async (req, res) => {
@@ -92,5 +106,6 @@ app.get('/kube', async (req, res) => {
   res.sendFile(path.join(__dirname, './kube.html'));
 });
 
-dcp.init().then(() => app.listen(1234));
+dcp.init().then(() => app.listen(port));
+console.log(`http://localhost:${port}`);
 
