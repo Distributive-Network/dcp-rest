@@ -10,6 +10,7 @@
     "express-validator": "^7.0.1",
     "jsonwebtoken": "^9.0.1",
     "kvin": "^1.2.14",
+    "sqlite3": "^5.1.6",
     "typescript": "^5.1.6"
   }
 }

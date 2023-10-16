@@ -65,6 +65,36 @@ app.get('/', function (req, res) {
             email: user.data.email,
           }
 
+//////////////////////
+          const sqlite3 = require('sqlite3').verbose();
+
+          console.log(process.env.SQLITE3_DB);
+
+          // Create a new database or connect to an existing one
+          let db = new sqlite3.Database(process.env.SQLITE3_DB, (err) => {
+              if (err) {
+                  console.error(err.message);
+              }
+              console.log('Connected to the database.');
+          });
+
+          // Inserting data
+          let stmt = db.prepare("INSERT INTO users VALUES (?, ?, ?)");
+          stmt.run([user.data.email, user.data.accessToken, user.data.keystore]);
+          stmt.finalize();
+
+          // Close the database connection
+          db.close((err) => {
+              if (err) {
+                  console.error(err.message);
+              }
+              console.log('Closed the database connection.');
+          });
+/////////////////////
+
+          console.log(user.accessToken);
+          console.log(user.data.keystore);
+
           return res.render('frame', {
             userData,
             lang: 'en',
