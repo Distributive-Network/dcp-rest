@@ -209,6 +209,7 @@ async function cancelJob(jobAddress, reqBody, bearer)
 
 async function countJobs(bearer)
 {
+/*
   const dcpConfig = require('dcp/dcp-config');
   const protocol = require('dcp/protocol');
   const wallet = require('dcp/wallet');
@@ -222,16 +223,17 @@ async function countJobs(bearer)
   }, idKs);
 
   return payload;
+*/
+
+  const jobs = await listJobs(bearer);
+  return jobs.length;
 }
 
-async function listJobs(reqBody, bearer)
+async function listJobs(bearer)
 {
   const dcpConfig = require('dcp/dcp-config');
   const protocol = require('dcp/protocol');
   const wallet = require('dcp/wallet');
-
-  const accounts = await getBankAccounts(reqBody, bearer);
-  const bankKs = await unlockBankAccount(accounts, reqBody.account.address, reqBody.account.password);
 
   const idKs = await getOAuthId(bearer);
   const phemeConnection = new protocol.Connection(dcpConfig.scheduler.services.pheme.location, idKs);
@@ -240,10 +242,7 @@ async function listJobs(reqBody, bearer)
     statuses: ['cancelled', 'corrupted', 'estimation', 'finished', 'running', 'paused', 'new']
   };
 
-  const { success, payload } = await phemeConnection.request(
-    'listJobs',
-    requestPayload
-  );
+  const { success, payload } = await phemeConnection.request('listJobs', requestPayload);
 
   return payload;
 }
