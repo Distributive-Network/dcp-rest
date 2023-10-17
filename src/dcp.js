@@ -228,9 +228,6 @@ async function listJobs(reqBody, bearer)
   const accounts = await getBankAccounts(reqBody, bearer);
   const bankKs = await unlockBankAccount(accounts, reqBody.account.address, reqBody.account.password);
 
-  // Make signed message to confirm ownership of keystore
-  const signedMessage = await bankKs.makeSignedMessage({ address: bankKs.address });
-
   const idKs = await getOAuthId(bearer);
   const phemeConnection = new protocol.Connection(dcpConfig.scheduler.services.pheme.location, idKs);
 
@@ -244,8 +241,6 @@ async function listJobs(reqBody, bearer)
   );
 
   return payload;
-
-  console.log(payload);
 }
 
 async function getPendingPayment(reqBody, bearer)
