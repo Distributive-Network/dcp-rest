@@ -1,8 +1,12 @@
 const dcp = require('dcp-client');
 const kvin = require('kvin');
 const workFunctionTransformer = require('./work-function');
+const db = require('./db');
 
-const SCHEDULER_URL = new URL('https://scheduler.distributed.computer');
+require("../db/load-env.js"); // chanmge this later - load env variables
+
+//const SCHEDULER_URL = new URL('https://scheduler.distributed.computer');
+const SCHEDULER_URL = new URL(process.env.SCHEDULER_HREF);
 
 function init()
 {
@@ -36,7 +40,8 @@ async function getBankAccounts(reqBody, bearer)
 
   const idKs = await getOAuthId(bearer);
   const portalConnection = new protocol.Connection(dcpConfig.portal, idKs);
-  const response = await portalConnection.send('viewKeystores', {});
+  const response = await portalConnection.request('viewKeystores', {});
+  debugger;
 
   return response.payload;
 }
@@ -119,11 +124,11 @@ async function results(jobAddress, bearer)
   const wallet = require('dcp/wallet');
 
   // caveat with the id... can only use it for jobs deployed with this oauth token, this is bad - but whatever
-  // it will change in the future
+  // it will change in the future when we have identity figured out on the dcp side
   const idKs = await getOAuthId(bearer);
   const conn = new protocol.Connection(dcpConfig.scheduler.services.resultSubmitter.location, idKs);
 
-  const { success, payload } = await conn.send('fetchResult', {
+  const { success, payload } = await conn.request('fetchResult', {
     job: new wallet.Address(jobAddress),
     owner: new wallet.Address(idKs.address),
   }, idKs);
@@ -154,7 +159,7 @@ async function status(jobAddress, bearer)
   const idKs = await getOAuthId(bearer);
   const conn = new protocol.Connection(dcpConfig.scheduler.services.pheme.location, idKs);
 
-  const { success, payload } = await conn.send('fetchJobReport', {
+  const { success, payload } = await conn.request('fetchJobReport', {
     job: new wallet.Address(jobAddress),
     jobOwner: new wallet.Address(idKs.address),
   }, idKs);
@@ -176,7 +181,7 @@ async function cancelJob(jobAddress, reqBody, bearer)
 
   const reason = reqBody.reason;
 
-  const { success, payload } = await conn.send('cancelJob', {
+  const { success, payload } = await conn.request('cancelJob', {
     job: new wallet.Address(jobAddress),
 //    jobOwner: new wallet.Address(idKs.address),
     reason: reason,
@@ -194,7 +199,7 @@ async function countJobs(bearer)
   const idKs = await getOAuthId(bearer);
   const conn = new protocol.Connection(dcpConfig.scheduler.services.pheme.location, idKs);
 
-  const { success, payload } = await conn.send('countJobs', {
+  const { success, payload } = await conn.request('countJobs', {
     jobOwner: new wallet.Address(idKs.address).address,
     isSelectingAll: false,
   }, idKs);
@@ -217,7 +222,7 @@ async function listJobs(reqBody, bearer)
   const idKs = await getOAuthId(bearer);
   const phemeConnection = new protocol.Connection(dcpConfig.scheduler.services.pheme.location, idKs);
 
-  const jobResponse = await phemeConnection.send('fetchJobsByAccount', {
+  const jobResponse = await phemeConnection.request('fetchJobsByAccount', {
     signedMessage: signedMessage,
     paymentAccount: bankKs.address,
   }).then(response => {
@@ -246,7 +251,7 @@ async function getPendingPayment(reqBody, bearer)
   const phemeConnection = new protocol.Connection(dcpConfig.scheduler.services.pheme.location, idKs);
   const bankTellerConnection = new protocol.Connection(dcpConfig.bank.services.bankTeller.location, idKs);
 
-  const jobResponse = await phemeConnection.send('fetchJobsByAccount', {
+  const jobResponse = await phemeConnection.request('fetchJobsByAccount', {
     signedMessage: signedMessage,
     paymentAccount: bankKs.address,
   }).then(response => {
@@ -257,7 +262,7 @@ async function getPendingPayment(reqBody, bearer)
 
 
   // Gets the sum of all pending payments for all jobs associated with the account
-  const pendingPayments = await bankTellerConnection.send('viewPendingPayments', {
+  const pendingPayments = await bankTellerConnection.request('viewPendingPayments', {
     preauthToken: jobResponse.payload.preauthToken,
   }).then(response => {
     if (!response.success)
@@ -273,20 +278,23 @@ async function getPendingPayment(reqBody, bearer)
 async function getOAuthId(bearer)
 {
   const wallet = require('dcp/wallet');
-
   const tokenStr = bearer.split('Bearer ')[1];
-  const tokenObj = JSON.parse(decodeURIComponent(escape(Buffer.from(tokenStr, 'base64').toString())));
-  const idKs = await new wallet.IdKeystore(tokenObj.keystore); // change to extract from token
-  await idKs.unlock(tokenObj.accessToken, 1000, true);
+
+  // db or cache call to get the keystore associated with the user based on what they sent.
+  const keystore = await db.getKeystore(tokenStr);
+
 
   wallet.passphrasePrompt = (message) => {
-    return token.accessToken;
+    return tokenStr;
   };
+
+  const idKs = await new wallet.IdKeystore(keystore); // change to extract from token
+
+  await idKs.unlock(tokenStr, 1000, true);
 
   return idKs;
 }
 
-// kube yaml
 async function getIdentity(bearer)
 {
   const wallet = require('dcp/wallet');
@@ -294,7 +302,7 @@ async function getIdentity(bearer)
 
   const idKs = await getOAuthId(bearer);
   const portalConnection = new protocol.Connection(dcpConfig.portal, idKs);
-  const response = await portalConnection.send('getUserInfo', {});
+  const response = await portalConnection.request('getUserInfo', {});
 
   return response.payload.id;
 }
