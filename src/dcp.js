@@ -41,7 +41,6 @@ async function getBankAccounts(reqBody, bearer)
   const idKs = await getOAuthId(bearer);
   const portalConnection = new protocol.Connection(dcpConfig.portal, idKs);
   const response = await portalConnection.request('viewKeystores', {});
-  debugger;
 
   return response.payload;
 }
@@ -128,13 +127,17 @@ async function results(jobAddress, bearer)
   const idKs = await getOAuthId(bearer);
   const conn = new protocol.Connection(dcpConfig.scheduler.services.resultSubmitter.location, idKs);
 
-  const { success, payload } = await conn.request('fetchResult', {
-    job: new wallet.Address(jobAddress),
-    owner: new wallet.Address(idKs.address),
-  }, idKs);
+  const body = {
+    operation: 'fetchResult', data: {
+      job: new wallet.Address(jobAddress),
+      owner: new wallet.Address(idKs.address),
+    }
+  };
+  const req = new conn.Request(body, idKs);
+  const { success, payload } = await conn.send(req);
 
   for (let i = 0; i < payload.length; i++)
-    payload[i].value = kvin.deserialize(payload[i].value.split('data:application/x-kvin,')[1])
+    payload[i].value = kvin.deserialize(decodeURI(payload[i].value.split('data:application/x-kvin,')[1]))
 
   // get the number of slices so far
   const jobStatus = await status(jobAddress, bearer);
@@ -159,10 +162,19 @@ async function status(jobAddress, bearer)
   const idKs = await getOAuthId(bearer);
   const conn = new protocol.Connection(dcpConfig.scheduler.services.pheme.location, idKs);
 
+  const body = {operation: 'fetchJobReport', data: {
+    job: new wallet.Address(jobAddress),
+    jobOwner: new wallet.Address(idKs.address),
+  }};
+  const req = new conn.Request(body, idKs);
+  const { success, payload } = await conn.send(req);
+
+/*
   const { success, payload } = await conn.request('fetchJobReport', {
     job: new wallet.Address(jobAddress),
     jobOwner: new wallet.Address(idKs.address),
   }, idKs);
+*/
 
   console.log(payload);
 
@@ -222,17 +234,18 @@ async function listJobs(reqBody, bearer)
   const idKs = await getOAuthId(bearer);
   const phemeConnection = new protocol.Connection(dcpConfig.scheduler.services.pheme.location, idKs);
 
-  const jobResponse = await phemeConnection.request('fetchJobsByAccount', {
-    signedMessage: signedMessage,
-    paymentAccount: bankKs.address,
-  }).then(response => {
-    if (!response.success)
-      throw payloadError(response, new Error("Operation 'fetchJobsByAccount' failed"));
-    return response;
-  });
+  const requestPayload = {
+    statuses: ['cancelled', 'corrupted', 'estimation', 'finished', 'running', 'paused', 'new']
+  };
 
-  delete jobResponse.payload.preauthToken;
-  return jobResponse.payload;
+  const { success, payload } = await phemeConnection.request(
+    'listJobs',
+    requestPayload
+  );
+
+  return payload;
+
+  console.log(payload);
 }
 
 async function getPendingPayment(reqBody, bearer)
