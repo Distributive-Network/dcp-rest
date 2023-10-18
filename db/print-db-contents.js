@@ -2,6 +2,16 @@
 const sqlite3 = require('sqlite3').verbose();
 require('./load-env');
 
+let table = 'users';
+if (process.argv.length > 2)
+  table = process.argv[2];
+
+if (table === "help" || table === "--help")
+{
+  console.log(`usage:\n\t${process.argv[0]} ${process.argv[1]} <tablename>`);
+  process.exit(1);
+}
+
 // Create a new database or connect to an existing one
 let db = new sqlite3.Database(process.env.SQLITE3_DB, (err) => {
     if (err) {
@@ -11,7 +21,7 @@ let db = new sqlite3.Database(process.env.SQLITE3_DB, (err) => {
 });
 
 // Querying data
-db.each("SELECT email, token, keystore FROM users", (err, row) => {
+db.each(`SELECT * FROM ${table}`, (err, row) => {
     if (err) {
         console.error(err.message);
     }
@@ -26,3 +36,4 @@ db.close((err) => {
     }
     console.log('Closed the database connection.');
 });
+

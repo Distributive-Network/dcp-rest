@@ -2,6 +2,7 @@ const dcp = require('dcp-client');
 const kvin = require('kvin');
 const workFunctionTransformer = require('./work-function');
 const db = require('./db');
+const webhooks = require('./webhooks/lib');
 
 require("../db/load-env.js"); // chanmge this later - load env variables
 
@@ -66,14 +67,25 @@ function computeFor(reqBody)
   job.requirements  = reqBody.requirements  || [];
   job.public        = reqBody.public        || {};
 
+
+  // webhook
+  if (reqBody.webHookUrls)
+  {
+    // TODO check if webHookUrls is empty
+    const appId = webhooks.setJobWebhookServers(reqBody.webHookUrls);
+    const jobUrl = webhooks.getDcpRDSUrl(appId);
+    job.setResultStorage(new URL(jobUrl), {});
+    reqBody.appId = appId;// this is fucked up, only temporarily doing this until next commit
+  }
+
   // add requirements to the job
-  var jobRequires = reqBody.requires || [];
+  var jobRequires = reqBody.packages || [];
   jobRequires = jobRequires.concat(additionalRequires);
 
-  if ((reqBody.requires && reqBody.requires.length > 0) || (additionalRequires && additionalRequires.length > 0))
+  if ((reqBody.packages && reqBody.packages.length > 0) || (additionalRequires && additionalRequires.length > 0))
     job.requires(jobRequires);
 
-  return job
+  return job;
 }
 
 async function deployJobDCP(reqBody, bearer)
@@ -83,7 +95,7 @@ async function deployJobDCP(reqBody, bearer)
   const protocol = require('dcp/protocol');
 
   // specify the ID keystore for the job
-  const oauthId = await getOAuthId(bearer);
+  const oauthId = await getOAuthId(bearer); // TODO - this hangs if oauthID is invalid
   wallet.addId(oauthId);
 
   // instantiate new job object with options
@@ -97,8 +109,9 @@ async function deployJobDCP(reqBody, bearer)
   const bankKs = await unlockBankAccount(accounts, reqBody.account.address, reqBody.account.password);
   job.setPaymentAccountKeystore(bankKs);
 
+
   // kick off the job and see if it gets accepted
-  return new Promise((resolve, reject) => {
+  const jobId = await new Promise((resolve, reject) => {
     // start computing the job
     job.exec(slicePaymentOffer).catch(reject);
 
@@ -113,11 +126,18 @@ async function deployJobDCP(reqBody, bearer)
         resolve(job.address);
     });
   });
+
+  // if using webhooks, associate the jobId with the appId
+  if (reqBody.webHookUrls && reqBody.appId)
+    await webhooks.setJobIdAppIdRelationship(jobId, reqBody.appId);
+
+  return jobId;
 }
 
 // get results
 async function results(jobAddress, bearer)
 {
+
   const dcpConfig = require('dcp/dcp-config');
   const protocol = require('dcp/protocol');
   const wallet = require('dcp/wallet');

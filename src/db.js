@@ -8,6 +8,9 @@
  *
  */
 
+
+// TODO error handling, this always assumes happy path
+
 const sqlite3 = require('sqlite3').verbose();
 
 // Create a new database or connect to an existing one
@@ -77,5 +80,30 @@ async function getKeystore(tokenStr)
   return row.keystore;
 }
 
-exports.getKeystore = getKeystore;
+async function addJobIdAppId(jobId, appId)
+{
+  const db = await connect();
+  let stmt = db.prepare("INSERT INTO jobs VALUES (?, ?)");
+
+  stmt.run([appId, jobId]);
+  stmt.finalize();
+
+  close(db); // don't await, just kick off the promise
+}
+
+async function addWebhook(appId, servers)
+{
+  const db = await connect();
+
+  let stmt = db.prepare("INSERT INTO webhooks VALUES (?, ?)");
+  for (const server of servers)
+    stmt.run([appId, server]);
+  stmt.finalize();
+
+  close(db); // don't await, just kick off the promise
+}
+
+exports.getKeystore   = getKeystore;
+exports.addJobIdAppId = addJobIdAppId;
+exports.addWebhook    = addWebhook;
 
