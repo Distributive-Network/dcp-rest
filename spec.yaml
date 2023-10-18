@@ -1,0 +1,145 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: Bestia API Documentation
+servers:
+  - url: http://oauth.bestia.office.distributive.network/locksmith/
+paths:
+  /job:
+    post:
+      summary: Deploy a Job and get back a job handle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                work:
+                  type: object
+                  properties:
+                    language:
+                      type: string
+                      enum: ['JavaScript', 'TypeScript']
+                    function:
+                      type: string
+                  required:
+                    - language
+                    - function
+                account:
+                  type: object
+                  properties:
+                    address:
+                      type: string
+                    password:
+                      type: string
+                  required:
+                    - address
+                slices:
+                  oneOf:
+                    - type: array
+                      items:
+                        type: object
+                        additionalProperties: true
+                    - type: object
+                      properties:
+                        remoteDataSet:
+                          type: array
+                          items:
+                            type: string
+                webHookUrls:
+                  type: array
+                  description: POST each result to servers as specified below
+                  items:
+                    type: string
+                args:
+                  type: array
+                  items:
+                    type: string
+                  description: extra parameters to pass to the workfunction's arguments. Added to the end of the arguments to call the work function
+                computeGroups:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      joinKey:
+                        type: string
+                      joinSecret:
+                        type: string
+                slicePaymentOffer:
+                  type: string
+                  description: which is a decimal number or MARKET_VALUE
+                requirements:
+                  type: object
+                  description: An object that describes the requirements a worker must have to be eligible for the job.
+                packages:
+                  type: array
+                  items:
+                    type: string
+                  description: list of packages to use for this job
+                public:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    description:
+                      type: string
+                    link:
+                      type: string
+      responses:
+        201:
+          description: The job has been created. This will return a JobId handle for other requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobAddress:
+                    type: string
+        400:
+          description: Bad request. Invalid input or missing required properties.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: A detailed error message.
+        401:
+          description: Unauthorized. Missing or invalid authentication token.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: A detailed error message.
+        403:
+          description: Forbidden. You do not have permission to access this resource.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: A detailed error message.
+        500:
+          description: An error occurred on the server.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: A detailed error message.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+security:
+  - bearerAuth: []
