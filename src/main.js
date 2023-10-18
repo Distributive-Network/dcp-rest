@@ -70,10 +70,12 @@ router.get('/accounts', async (req, res) => {
   res.send(await dcp.getAccounts({}, req.headers.authorization));
 });
 
+// will remove this later
 router.get('/identity', async (req, res) => {
   res.send(await dcp.getIdentity(req.headers.authorization));
 });
 
+// will remove this later
 router.get('/kube', async (req, res) => {
   res.sendFile(path.join(__dirname, './kube.html'));
 });
