@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 const { config } = require('dotenv');
 const { expand } = require('dotenv-expand');
 
