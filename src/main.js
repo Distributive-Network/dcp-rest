@@ -8,10 +8,6 @@ const path = require('path');
 const express = require('express');
 
 const port = 1234;
-/*
-const body             = require('express-validator').body;
-const validationResult = require('express-validator').validationResult;
-*/
 
 expand(config());
 expand(
@@ -22,36 +18,6 @@ expand(
 );
 
 const router = express.Router();
-
-/*
-const app = express();
-app.use(express.json());
-*/
-/*
-// generic validator
-function validate(req, res, next)
-{
-  const errors = validationResult(req);
-  console.log(errors);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-  next();
-}
-*/
-/*
-
-// submit a job
-function jobValidationRules ()
-{
-  return [
-    body('slices').exists().withMessage('One of these must exist: slices.array, slices.range, or slices.remoteDataSet.'),
-    body('work').exists().withMessage('Need to send both work.function and work.function.'),
-    body('args').optional().isArray().withMessage('args must be an array'),
-    body('account').exists().withMessage('Need to send an account.address and optionally account.password if it has one'),
-  ];
-}
-*/
 
 router.post('/job', async (req, res) => {
   var jobAddress;
@@ -117,12 +83,6 @@ router.get('/', (req, res) => {
   res.send(`Generate an API token here: ${process.env.LOCKSMITH_URL}`);
 });
 
-/*
-dcp.init().then(() => app.listen(port));
-console.log(`http://localhost:${port}`);
-*/
-
 module.exports.router = router;
 module.exports.dcpInit = dcp.init;
-
 
