@@ -47,7 +47,7 @@ async function getBankAccounts(reqBody, bearer)
 }
 
 // creates a job and parses body into compute.for args
-function computeFor(reqBody)
+async function computeFor(reqBody)
 {
   const compute = require('dcp/compute');
 
@@ -72,8 +72,8 @@ function computeFor(reqBody)
   if (reqBody.webHookUrls)
   {
     // TODO check if webHookUrls is empty
-    const appId = webhooks.setJobWebhookServers(reqBody.webHookUrls);
-    const jobUrl = webhooks.getDcpRDSUrl(appId);
+    const appId = await webhooks.setJobWebhookServers(reqBody.webHookUrls);
+    const jobUrl = await webhooks.getDcpRDSUrl(appId);
     job.setResultStorage(new URL(jobUrl), {});
     reqBody.appId = appId;// this is fucked up, only temporarily doing this until next commit
   }
@@ -99,7 +99,7 @@ async function deployJobDCP(reqBody, bearer)
   wallet.addId(oauthId);
 
   // instantiate new job object with options
-  const job = computeFor(reqBody);
+  const job = await computeFor(reqBody);
   var slicePaymentOffer = compute.marketValue;
   if (typeof reqBody.slicePaymentOffer === 'number')
     slicePaymentOffer = reqBody.slicePaymentOffer;

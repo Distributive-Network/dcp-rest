@@ -3,7 +3,7 @@ info:
   version: 1.0.0
   title: Bestia API Documentation
 servers:
-  - url: http://oauth.bestia.office.distributive.network/locksmith/
+  - url: http://bestia.office.distributive.network/api/
 paths:
   /job:
     post:
