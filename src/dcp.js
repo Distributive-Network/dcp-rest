@@ -156,8 +156,15 @@ async function results(jobAddress, bearer)
   const req = new conn.Request(body, idKs);
   const { success, payload } = await conn.send(req);
 
+  console.log(payload);
+
   for (let i = 0; i < payload.length; i++)
-    payload[i].value = kvin.deserialize(decodeURI(payload[i].value.split('data:application/x-kvin,')[1]))
+  {
+    if (payload[i].value.includes("application/x-kvin"))
+      payload[i].value = kvin.deserialize(decodeURI(payload[i].value.split('data:application/x-kvin,')[1]))
+    else
+      payload[i].value = decodeURI(payload[i].value.split('data:,')[1])
+  }
 
   // get the number of slices so far
   const jobStatus = await status(jobAddress, bearer);
