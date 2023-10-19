@@ -12,5 +12,5 @@ cd -
 
 # run project
 echo "Running go project"
-$WEBHOOK_REPOSTER_DIR/webhooker
+$WEBHOOK_REPOSTER_DIR/reposter
 
