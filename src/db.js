@@ -68,12 +68,12 @@ async function close(db)
 }
 
 
-async function getKeystore(tokenStr)
+async function getKeystore(apiKey)
 {
   const db = await connect();
 
   // XXX TODO XXX TODO WARNING - SQL INJECTION TODO XXX TODO XXX
-  const row = await query(db, `SELECT keystore FROM users where token="${tokenStr}"`);
+  const row = await query(db, `SELECT keystore FROM users where key="${apiKey}"`);
 
   close(db); // don't await, just kick off the promise
 

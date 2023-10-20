@@ -13,7 +13,7 @@ let db = new sqlite3.Database(process.env.SQLITE3_DB, (err) => {
 // Creating a table
 db.serialize(() => {
     // used for api keys
-    db.run("CREATE TABLE IF NOT EXISTS users (email TEXT, token TEXT, keystore TEXT)", (err) => {
+    db.run("CREATE TABLE IF NOT EXISTS users (email TEXT, key TEXT, keystore TEXT)", (err) => {
         if (err) {
             console.error(err.message);
         }

@@ -2,6 +2,8 @@ const { config } = require('dotenv');
 const { expand } = require('dotenv-expand');
 const debug = require('debug');
 const path = require('path');
+const crypto = require('crypto');
+const fs = require('fs');
 
 expand(config());
 expand(
@@ -39,7 +41,9 @@ var dcpOAuth = new ClientOAuth2({
   scopes: ['login']
 });
 
-const fs = require('fs');
+function generateRandomString(length) {
+    return crypto.randomBytes(Math.ceil(length / 2)).toString('hex').slice(0, length);
+}
 
 let proxyAppPath = "/locksmith";
 app.use(function (req, res, next) {
@@ -58,11 +62,13 @@ app.get('/', function (req, res) {
         try {
           // needed to extract keystore address (currently easier to this here than in frame.html)
           const ks = JSON.parse(user.data.keystore);
+          const apiKey = generateRandomString(20); // 20 byte string used for uniqueness
           const userData = {
             token: user.accessToken,
-            keystore: user.data.keystore,
+//            keystore: user.data.keystore,
             proxy: ks.address,
             email: user.data.email,
+            key: `${apiKey}.${user.accessToken}`,
           }
 
 //////////////////////
@@ -80,7 +86,7 @@ app.get('/', function (req, res) {
 
           // Inserting data
           let stmt = db.prepare("INSERT INTO users VALUES (?, ?, ?)");
-          stmt.run([user.data.email, user.accessToken, user.data.keystore]);
+          stmt.run([user.data.email, apiKey, user.data.keystore]);
           stmt.finalize();
 
           // Close the database connection

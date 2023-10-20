@@ -35,8 +35,6 @@
         margin-top: 0;
         margin-bottom: 0;
         white-space: nowrap;
-        text-overflow: ellipsis;
-        overflow: hidden;
       }
 
       #reflector-frame-container #modal {
@@ -210,7 +208,7 @@
         </div>
         <div id="account-select">
           <h1>Here is your API Key</h1>
-	  <p><%= userData.token %></p>
+	  <p><%= userData.key %></p>
           <div id="logout">
             <p>Logged in as<i class="highlight-green"><%= userData.email %></i></p>
             <a href='/signout?token=<%= userData.token %>&proxy=<%= userData.proxy %>'>Not you?</a>
@@ -220,7 +218,6 @@
     </div>
     <article
       id="user-data"
-      data-keystore="<%= userData.keystore %>"
       data-token="<%= userData.token %>">
     </article>
     <script>

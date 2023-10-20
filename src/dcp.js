@@ -107,8 +107,9 @@ async function deployJobDCP(reqBody, bearer)
   // find the bank account and try to unlock it
   const accounts = await getBankAccounts(reqBody, bearer);
   const bankKs = await unlockBankAccount(accounts, reqBody.account.address, reqBody.account.password);
+  if (bankKs === null)
+    throw new Error(`DCP bank account not found`); // TODO don't throw on error, do error handling
   job.setPaymentAccountKeystore(bankKs);
-
 
   // kick off the job and see if it gets accepted
   const jobId = await new Promise((resolve, reject) => {
@@ -318,18 +319,20 @@ async function getOAuthId(bearer)
 {
   const wallet = require('dcp/wallet');
   const tokenStr = bearer.split('Bearer ')[1];
+  const tokenHalves = tokenStr.split('.');
+  const apiKey = tokenHalves[0];
+  const ksPassword = tokenHalves[1];
 
   // db or cache call to get the keystore associated with the user based on what they sent.
-  const keystore = await db.getKeystore(tokenStr);
-
+  const keystore = await db.getKeystore(apiKey);
 
   wallet.passphrasePrompt = (message) => {
-    return tokenStr;
+    return ksPassword;
   };
 
-  const idKs = await new wallet.IdKeystore(keystore); // change to extract from token
+  const idKs = await new wallet.IdKeystore(keystore);
 
-  await idKs.unlock(tokenStr, 1000, true);
+  await idKs.unlock(ksPassword, 1000, true);
 
   return idKs;
 }
