@@ -3,6 +3,7 @@ const kvin = require('kvin');
 const workFunctionTransformer = require('./work-function');
 const db = require('./db');
 const webhooks = require('./webhooks/lib');
+const HttpError = require('./error').HttpError;
 
 require("../db/load-env.js"); // chanmge this later - load env variables
 
@@ -94,6 +95,9 @@ async function deployJobDCP(reqBody, bearer)
   const wallet = require('dcp/wallet');
   const protocol = require('dcp/protocol');
 
+  const bankAddress = reqBody.account.address;
+  const bankPassword = reqBody.account.password;
+
   // specify the ID keystore for the job
   const oauthId = await getOAuthId(bearer); // TODO - this hangs if oauthID is invalid
   wallet.addId(oauthId);
@@ -106,9 +110,9 @@ async function deployJobDCP(reqBody, bearer)
 
   // find the bank account and try to unlock it
   const accounts = await getBankAccounts(reqBody, bearer);
-  const bankKs = await unlockBankAccount(accounts, reqBody.account.address, reqBody.account.password);
+  const bankKs = await unlockBankAccount(accounts, bankAddress, bankPassword);
   if (bankKs === null)
-    throw new Error(`DCP bank account not found`); // TODO don't throw on error, do error handling
+    throw new HttpError(`DCP bank account ${bankAddress} not found`);
   job.setPaymentAccountKeystore(bankKs);
 
   // kick off the job and see if it gets accepted
@@ -138,7 +142,6 @@ async function deployJobDCP(reqBody, bearer)
 // get results
 async function results(jobAddress, bearer)
 {
-
   const dcpConfig = require('dcp/dcp-config');
   const protocol = require('dcp/protocol');
   const wallet = require('dcp/wallet');
@@ -237,22 +240,6 @@ async function cancelJob(jobAddress, reqBody, bearer)
 
 async function countJobs(bearer)
 {
-/*
-  const dcpConfig = require('dcp/dcp-config');
-  const protocol = require('dcp/protocol');
-  const wallet = require('dcp/wallet');
-
-  const idKs = await getOAuthId(bearer);
-  const conn = new protocol.Connection(dcpConfig.scheduler.services.pheme.location, idKs);
-
-  const { success, payload } = await conn.request('countJobs', {
-    jobOwner: new wallet.Address(idKs.address).address,
-    isSelectingAll: false,
-  }, idKs);
-
-  return payload;
-*/
-
   const jobs = await listJobs(bearer);
   return jobs.length;
 }

@@ -10,12 +10,19 @@ const OpenApiValidator = require('express-openapi-validator');
 const routes = require('./src/main').router;
 const dcpInit = require('./src/main').dcpInit;
 
+// load environment variables
+require("./db/load-env.js");
+
 app.use(express.json());
 app.use(express.text());
 app.use(express.urlencoded({ extended: false }));
 
 // server openAPI spec at /spec and use it to validate requests
 const spec = path.join(__dirname, 'spec.yaml');
+
+// routes
+app.use('/', routes);
+
 app.use('/spec', express.static(spec));
 
 app.use(
@@ -25,16 +32,31 @@ app.use(
   }),
 );
 
-// routes
-app.use('/', routes);
+
+
+// Error handling middleware for validation errors
+app.use((err, req, res, next) => {
+  // If it's an OpenAPI error, format it nicely
+  if (err.status === 400 && err.type === 'request.openapi.validation') {
+    return res.status(err.status).json({
+      error: 'Bad Request',
+      messages: err.errors.map(error => error.message),
+    });
+  }
+  
+  // Pass on to default error handler or other error middleware
+  next(err);
+});
 
 // errors
 app.use((err, req, res, next) => {
-  console.error(err); // dump error to console for debug
-  res.status(err.status || 500).json({
-    message: err.message,
-    errors: err.errors,
-  });
+  const status = err.status || 500;
+
+  console.error(err); // Dump error to console for debug
+  if (err.customMessage)
+    res.status(status).send({ message: err.customMessage });
+
+  res.status(status).send({ message: 'Internal Server Error' });
 });
 
 

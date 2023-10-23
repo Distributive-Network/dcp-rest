@@ -17,17 +17,13 @@ expand(
 
 const router = express.Router();
 
-router.post('/job', async (req, res) => {
-  var jobAddress;
+router.post('/job', async (req, res, next) => {
   try {
-    jobAddress = await dcp.deployJobDCP(req.body, req.headers.authorization);
+    const jobId = await dcp.deployJobDCP(req.body, req.headers.authorization);
+    res.send(jobId);
+  } catch (error) {
+    next(error); // Forward the error to your error-handling middleware
   }
-  catch (error){
-    res.status(400);
-    res.send(error.message);
-  }
-
-  res.send(jobAddress);
 });
 
 // return job results
