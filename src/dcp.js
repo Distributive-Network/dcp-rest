@@ -158,7 +158,22 @@ async function results(jobAddress, bearer)
     }
   };
   const req = new conn.Request(body, idKs);
-  const { success, payload } = await conn.send(req);
+  let success, payload;
+
+  try
+  {
+    const res = await conn.send(req);
+    success = res.success;
+    payload = res.payload;
+    console.log(res);
+  }
+
+  catch (e)
+  {
+    throw new HttpError(`-Error getting results for job ${jobAddress}`);
+  }
+  if (!success)
+    throw new HttpError(`Error getting results for job ${jobAddress}`);
 
   console.log(payload);
 
@@ -283,7 +298,7 @@ async function getPendingPayment(reqBody, bearer)
     paymentAccount: bankKs.address,
   }).then(response => {
     if (!response.success)
-      throw payloadError(response, new Error("Operation 'fetchJobsByAccount' failed"));
+      throw new HttpError("Operation 'fetchJobsByAccount' failed");
     return response;
   });
 
@@ -293,7 +308,7 @@ async function getPendingPayment(reqBody, bearer)
     preauthToken: jobResponse.payload.preauthToken,
   }).then(response => {
     if (!response.success)
-      throw payloadError(response, new Error("Operation 'viewPendingPayments' failed"));
+      throw new HttpError("Operation 'viewPendingPayments' failed");
     return response;
   });
   const {totalPendingPayments} = pendingPayments.payload

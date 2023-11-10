@@ -27,10 +27,16 @@ router.post('/job', async (req, res, next) => {
 });
 
 // return job results
-router.get('/job/:id/result', async (req, res) => {
+router.get('/job/:id/result', async (req, res, next) => {
   const jobAddress = req.params.id;
-  const results = await dcp.results(jobAddress, req.headers.authorization);
-  res.send(results);
+  try {
+    const results = await dcp.results(jobAddress, req.headers.authorization);
+    res.send(results);
+  } catch (error) {
+    console.log(error);
+    res.status(error.status);
+    next(error);
+  }
 });
 
 // job status
@@ -62,16 +68,6 @@ router.get('/jobs/count', async (req, res) => {
 // returns all bank accounts associated with identity
 router.get('/accounts', async (req, res) => {
   res.send(await dcp.getAccounts({}, req.headers.authorization));
-});
-
-// will remove this later
-router.get('/identity', async (req, res) => {
-  res.send(await dcp.getIdentity(req.headers.authorization));
-});
-
-// will remove this later
-router.get('/kube', async (req, res) => {
-  res.sendFile(path.join(__dirname, './kube.html'));
 });
 
 // point to where you can generate the locksmith stuff
