@@ -1,3 +1,13 @@
+/**
+ * @file main.js
+ *
+ * DCP API Routes.
+ *
+ * @author Will Pringle <will@distributive.network>
+ * @date November 2023
+ */
+
+'use strict';
 const { config } = require('dotenv');
 const { expand } = require('dotenv-expand');
 
@@ -5,12 +15,10 @@ const dcp = require('./dcp');
 const path = require('path');
 const express = require('express');
 
-const port = 1234;
-
 expand(config());
 expand(
   config({
-    path: path.resolve(process.cwd(), ".env"),
+    path: path.resolve(process.cwd(), '.env'),
     override: true,
   })
 );
@@ -18,10 +26,13 @@ expand(
 const router = express.Router();
 
 router.post('/job', async (req, res, next) => {
-  try {
+  try
+  {
     const jobId = await dcp.deployJobDCP(req.body, req.headers.authorization);
     res.send(jobId);
-  } catch (error) {
+  }
+  catch (error)
+  {
     next(error); // Forward the error to your error-handling middleware
   }
 });
@@ -29,10 +40,13 @@ router.post('/job', async (req, res, next) => {
 // return job results
 router.get('/job/:id/result', async (req, res, next) => {
   const jobAddress = req.params.id;
-  try {
+  try
+  {
     const results = await dcp.results(jobAddress, req.headers.authorization);
     res.send(results);
-  } catch (error) {
+  }
+  catch (error)
+  {
     console.log(error);
     res.status(error.status);
     next(error);
@@ -62,7 +76,7 @@ router.get('/jobs', async (req, res) => {
 // returns a number of all the jobs that have been deployed
 router.get('/jobs/count', async (req, res) => {
   const jobNum = await dcp.countJobs(req.headers.authorization);
-  res.send({jobCount: jobNum});
+  res.send({ jobCount: jobNum });
 });
 
 // returns all bank accounts associated with identity

@@ -1,4 +1,14 @@
 #!/usr/bin/env node
+/**
+ * @file app.js
+ *
+ * Express server entry point.
+ *
+ * @author Will Pringle <will@distributive.network>
+ * @date November 2023
+ */
+
+'use strict';
 
 const express = require('express');
 const path = require('path');
@@ -11,7 +21,7 @@ const routes = require('./src/main').router;
 const dcpInit = require('./src/main').dcpInit;
 
 // load environment variables
-require("./db/load-env.js");
+require('./db/load-env.js');
 
 app.use(express.json());
 app.use(express.text());
@@ -37,7 +47,8 @@ app.use(
 // Error handling middleware for validation errors
 app.use((err, req, res, next) => {
   // If it's an OpenAPI error, format it nicely
-  if (err.status === 400 && err.type === 'request.openapi.validation') {
+  if (err.status === 400 && err.type === 'request.openapi.validation') 
+  {
     return res.status(err.status).json({
       error: 'Bad Request',
       messages: err.errors.map(error => error.message),
@@ -61,7 +72,7 @@ app.use((err, req, res, next) => {
 
 
 dcpInit().then(() => {
-  console.log("api @ http://localhost:1234");
+  console.log('api @ http://localhost:1234');
   http.createServer(app).listen(1234);
 });
 
