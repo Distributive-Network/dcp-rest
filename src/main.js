@@ -29,7 +29,7 @@ router.post('/job', async (req, res, next) => {
   try
   {
     const jobId = await dcp.deployJobDCP(req.body, req.headers.authorization);
-    res.send(jobId);
+    res.send({ jobId: jobId });
   }
   catch (error)
   {
@@ -90,5 +90,4 @@ router.get('/', (req, res) => {
 });
 
 module.exports.router = router;
-module.exports.dcpInit = dcp.init;
 

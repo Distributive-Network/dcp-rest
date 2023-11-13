@@ -1,24 +1,16 @@
-const dcp = require('dcp-client');
 const kvin = require('kvin');
 const workFunctionTransformer = require('./work-function');
 const db = require('./db');
 const webhooks = require('./webhooks/lib');
 const HttpError = require('./error').HttpError;
 
-require("../db/load-env.js"); // chanmge this later - load env variables
-
-//const SCHEDULER_URL = new URL('https://scheduler.distributed.computer');
-const SCHEDULER_URL = new URL(process.env.SCHEDULER_HREF);
-
-function init()
-{
-  return dcp.init(SCHEDULER_URL);
-}
+// dcp specific imports
+const protocol = require('dcp/protocol');
+const wallet = require('dcp/wallet');
 
 // unlock bank account
 async function unlockBankAccount(bankAccounts, address, password)
 {
-  const wallet = require('dcp/wallet');
 
   // try to find the account in the list of bankAccounts
   for (const i in bankAccounts)
@@ -37,8 +29,6 @@ async function unlockBankAccount(bankAccounts, address, password)
 // get the accounts associated with the portal user
 async function getBankAccounts(reqBody, bearer)
 {
-  const wallet = require('dcp/wallet');
-  const protocol = require('dcp/protocol');
 
   const idKs = await getOAuthId(bearer);
   const portalConnection = new protocol.Connection(dcpConfig.portal, idKs);
@@ -92,8 +82,6 @@ async function computeFor(reqBody)
 async function deployJobDCP(reqBody, bearer)
 {
   const compute = require('dcp/compute');
-  const wallet = require('dcp/wallet');
-  const protocol = require('dcp/protocol');
 
   const bankAddress = reqBody.account.address;
   const bankPassword = reqBody.account.password;
@@ -143,8 +131,6 @@ async function deployJobDCP(reqBody, bearer)
 async function results(jobAddress, bearer)
 {
   const dcpConfig = require('dcp/dcp-config');
-  const protocol = require('dcp/protocol');
-  const wallet = require('dcp/wallet');
 
   // caveat with the id... can only use it for jobs deployed with this oauth token, this is bad - but whatever
   // it will change in the future when we have identity figured out on the dcp side
@@ -202,8 +188,6 @@ async function results(jobAddress, bearer)
 async function status(jobAddress, bearer)
 {
   const dcpConfig = require('dcp/dcp-config');
-  const protocol = require('dcp/protocol');
-  const wallet = require('dcp/wallet');
 
   const idKs = await getOAuthId(bearer);
   const conn = new protocol.Connection(dcpConfig.scheduler.services.pheme.location, idKs);
@@ -236,8 +220,6 @@ async function status(jobAddress, bearer)
 async function cancelJob(jobAddress, reqBody, bearer)
 {
   const dcpConfig = require('dcp/dcp-config');
-  const protocol = require('dcp/protocol');
-  const wallet = require('dcp/wallet');
 
   const idKs = await getOAuthId(bearer);
   const conn = new protocol.Connection(dcpConfig.scheduler.services.jobSubmit.location, idKs)
@@ -262,8 +244,6 @@ async function countJobs(bearer)
 async function listJobs(bearer)
 {
   const dcpConfig = require('dcp/dcp-config');
-  const protocol = require('dcp/protocol');
-  const wallet = require('dcp/wallet');
 
   const idKs = await getOAuthId(bearer);
   const phemeConnection = new protocol.Connection(dcpConfig.scheduler.services.pheme.location, idKs);
@@ -280,8 +260,6 @@ async function listJobs(bearer)
 async function getPendingPayment(reqBody, bearer)
 {
   const dcpConfig = require('dcp/dcp-config');
-  const protocol = require('dcp/protocol');
-  const wallet = require('dcp/wallet');
 
   const accounts = await getBankAccounts(reqBody, bearer);
   const bankKs = await unlockBankAccount(accounts, reqBody.account.address, reqBody.account.password);
@@ -319,7 +297,6 @@ async function getPendingPayment(reqBody, bearer)
 // auth
 async function getOAuthId(bearer)
 {
-  const wallet = require('dcp/wallet');
   const tokenStr = bearer.split('Bearer ')[1];
   const tokenHalves = tokenStr.split('.');
   const apiKey = tokenHalves[0];
@@ -341,8 +318,6 @@ async function getOAuthId(bearer)
 
 async function getIdentity(bearer)
 {
-  const wallet = require('dcp/wallet');
-  const protocol = require('dcp/protocol');
 
   const idKs = await getOAuthId(bearer);
   const portalConnection = new protocol.Connection(dcpConfig.portal, idKs);
@@ -359,6 +334,5 @@ exports.cancelJob    = cancelJob;
 exports.countJobs    = countJobs;
 exports.listJobs     = listJobs;
 exports.getAccounts  = getBankAccounts;
-exports.init         = init;
 exports.getIdentity  = getIdentity;
 
