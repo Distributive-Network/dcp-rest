@@ -10,7 +10,7 @@
 'use strict';
 
 const HttpError = require('../error').HttpError;
-const workFunctionTransformer = require('../work-function');
+const workFunctionTransformer = require('./work-function');
 const webhooks = require('../webhooks/lib');
 
 const compute  = require('dcp/compute');

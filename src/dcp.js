@@ -1,5 +1,4 @@
 const kvin = require('kvin');
-const workFunctionTransformer = require('./work-function');
 const db = require('./db');
 const webhooks = require('./webhooks/lib');
 const HttpError = require('./error').HttpError;
