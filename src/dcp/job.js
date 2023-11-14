@@ -13,17 +13,22 @@ const HttpError = require('../error').HttpError;
 const workFunctionTransformer = require('../work-function');
 const webhooks = require('../webhooks/lib');
 
-const protocol = require('dcp/protocol');
 const compute  = require('dcp/compute');
-const wallet   = require('dcp/compute');
 
+/**
+ * Specifies a job and contains a deploy method.
+ */
 class JobSpec
 {
   #jobRef;
 
+  /**
+   * Constructor.
+   * @constructor
+   * @param {object} optons - an options object
+   */
   constructor(options)
   {
-    debugger;
     // validate work function and transform it if required
     const work = workFunctionTransformer.setup(options.work);
     this.workFunction = work.workFunction;
@@ -43,13 +48,13 @@ class JobSpec
       this.appIdPromise = webhooks.setJobWebhookServers(options.webHookUrls);
       this.appidPromise.then((appId) => {
         return webhooks.getDcpRDSUrl(appId);
-      }).then((joburl) => {
+      }).then((jobUrl) => {
         job.setResultStorage(new URL(jobUrl), {});
       });
     }
 
     // add requirements to the job TODO: clean this up
-    var jobRequires = options.packages || [];
+    let jobRequires = options.packages || [];
     jobRequires = jobRequires.concat(additionalRequires);
 
     if ((options.packages && options.packages.length > 0) || (additionalRequires && additionalRequires.length > 0))
@@ -60,6 +65,9 @@ class JobSpec
     job.setPaymentAccountKeystore(options.bankKs);
   }
 
+  /**
+   * Deploys the job to dcp and returns a promise to a jobId.
+   */
   async deploy()
   {
     // kick off the job and see if it gets accepted
