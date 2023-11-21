@@ -87,7 +87,18 @@ async function status(jobAddress, bearer)
 {
   const idKs = await getOAuthId(bearer);
   const jh = new JobHandle(jobAddress, idKs);
-  return jh.status();
+  const jobStatus = await jh.status();
+
+  // TODO do some sort of error checking on jobStatus
+
+  // since all jobs submitted by the api are "open" its not really valuable for users
+  // to see that their job is "running" when its completed all slices... So we'll instead
+  // check to see if all the slices deployed for the job have been completed, and we'll set
+  // the status to "completed"
+  if (jobStatus.totalSlices === jobStatus.completedSlices)
+    jobStatus.status = 'completed';
+
+  return jobStatus;
 }
 
 // cancel a job

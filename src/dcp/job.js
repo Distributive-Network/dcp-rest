@@ -13,12 +13,14 @@ const HttpError = require('../error').HttpError;
 const workFunctionTransformer = require('./work-function');
 const webhooks = require('../webhooks/lib');
 
-const compute     = require('dcp/compute');
-const dcpConfig   = require('dcp/dcp-config');
-const protocol    = require('dcp/protocol');
-const wallet      = require('dcp/wallet');
-const addSlices   = require('dcp/job').addSlices;
-const fetchResults = require('dcp/job').fetchResults;
+const compute        = require('dcp/compute');
+const dcpConfig      = require('dcp/dcp-config');
+const protocol       = require('dcp/protocol');
+const wallet         = require('dcp/wallet');
+const addSlices      = require('dcp/job').addSlices;
+const fetchResults   = require('dcp/job').fetchResults;
+const rehydrateRange = require('dcp/range-object').rehydrateRange;
+const fetchURI       = require('dcp/utils').fetchURI;
 
 /**
  * Specifies a job and contains a deploy method.
@@ -150,18 +152,38 @@ class JobHandle
    * Gets the currently completed results from a job.
    * @return {Array} results - an array of currently completed slices shaped like: [{ sliceNumber: n, value: m }...]
    */
-  async fetchResults()
+  async fetchResults(rangeObject)
   {
-    const results = await fetchResults(this.address);
+    var range = rangeObject;
+    const results = [];
 
-    if (results === undefined)
-      throw new HttpError(`Cannot get results for job ${this.address}`);
+    if (range)
+      range = rehydrateRange(rangeObject);
+
+    const body = {
+      operation: 'fetchResult',
+      data: {
+        job: this.address,
+        owner: this.idKs.address,
+        range,
+      }
+    };
+
+    const request = new this.resultSubmitterConnection.Request(body, this.idKs);
+    const { success, payload } = await this.resultSubmitterConnection.send(request);
+
+    if (!success)
+      throw new HttpError(`Cannot get results for job ${this.address.address}`);
 
     // fetchResults returns an array of {sliceNumber: n, value: m}, rename "slice" to "sliceNumber"
-    for (const result of results)
+    for (const encodedResult of payload)
     {
-      result.sliceNumber = result.slice;
-      delete result.slice;
+      const result = {
+        sliceNumber: encodedResult.slice,
+        value: await fetchURI(decodeURIComponent(encodedResult.value)),
+      };
+
+      results.push(result);
     }
 
     return results;
