@@ -26,7 +26,7 @@ function setUpExpressServer()
 
 
   // load environment variables
-  require('./db/load-env.js');
+//  require('./db/load-env.js');
 
   app.use(express.json());
   app.use(express.text());

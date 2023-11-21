@@ -1,4 +1,4 @@
-require("../../db/load-env.js"); // chanmge this later - load env variables
+//require("../../db/load-env.js"); // chanmge this later - load env variables
 const db = require('../db');
 const crypto = require('crypto');
 
