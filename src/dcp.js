@@ -60,6 +60,17 @@ async function deployJobDCP(reqBody, bearer)
   return await jobSpec.deploy();
 }
 
+// append slices to a running job
+async function addSlices(jobAddress, reqBody, bearer)
+{
+  const idKs = await getOAuthId(bearer);
+
+  // try to add slices to the job
+  const jh = new JobHandle(jobAddress, idKs);
+
+  return jh.add(reqBody.sliceData);
+}
+
 // get results
 async function results(jobAddress, bearer)
 {
@@ -204,4 +215,5 @@ exports.countJobs    = countJobs;
 exports.listJobs     = listJobs;
 exports.getAccounts  = getBankAccounts;
 exports.getIdentity  = getIdentity;
+exports.addSlices    = addSlices;
 

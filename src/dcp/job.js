@@ -9,6 +9,8 @@
 
 'use strict';
 
+const kvin = require('kvin');
+
 const HttpError = require('../error').HttpError;
 const workFunctionTransformer = require('./work-function');
 const webhooks = require('../webhooks/lib');
@@ -21,6 +23,7 @@ const addSlices      = require('dcp/job').addSlices;
 const fetchResults   = require('dcp/job').fetchResults;
 const rehydrateRange = require('dcp/range-object').rehydrateRange;
 const fetchURI       = require('dcp/utils').fetchURI;
+
 
 /**
  * Specifies a job and contains a deploy method.
@@ -143,9 +146,42 @@ class JobHandle
    * Adds slices to a currently running job.
    * @param {Array} sliceData - an array of slice data to add to the job to execute
    */
-  add(newSlices)
+  async add(newSlices)
   {
-    return addSlices(newSlices, this.address);
+    const { Connection } = require('dcp/protocol-v4');
+    let jobSubmitConnection = null;
+    const identitykeystore = this.idKs;
+
+    function createNewConnection()
+    {
+      jobSubmitConnection = new Connection(dcpConfig.scheduler.services.jobSubmit, identitykeystore, { allowBatch: false });
+      jobSubmitConnection.on('end', createNewConnection);
+      return jobSubmitConnection.connect();
+    }
+
+    if (!(newSlices instanceof Array))
+      throw new HttpError(`${newSlices} is not an instance of an Array`);
+  
+    const payloadData = {
+      job: this.address,
+      dataValues: kvin.marshal(newSlices),
+    };
+
+    if (!jobSubmitConnection)
+      createNewConnection();
+
+    const request = new jobSubmitConnection.Request({
+      /* payload object */
+      operation: 'addSliceData',
+      jsonData:  JSON.stringify(payloadData) /* becomes payload.data in transit */
+    }, this.idKs);
+
+    const { success, payload } = await request.send();
+
+    if (!success)
+      throw new HttpError(`Failure to upload slices for job ${this.address}`);
+    
+    return payload;
   } 
 
   /**
@@ -216,10 +252,13 @@ class JobHandle
    */
   async cancel(reason)
   {
-    const { success, payload } = await this.jobSubmitConnection.request('cancelJob', {
+    debugger;
+    const request = new this.jobSubmitConnection.Request({ operation: 'cancelJob', data: {
       job: this.address,
       reason,
-    }, this.idKs);
+    }}, this.idKs);
+
+    const { success, payload } = await this.jobSubmitConnection.send(request);
 
     if (!success)
       throw new HttpError(`Unable to cancel job ${this.address}`);
