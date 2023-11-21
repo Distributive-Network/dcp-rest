@@ -18,7 +18,7 @@ const dcpConfig   = require('dcp/dcp-config');
 const protocol    = require('dcp/protocol');
 const wallet      = require('dcp/wallet');
 const addSlices   = require('dcp/job').addSlices;
-const fetchSlices = require('dcp/job').fetchSlices;
+const fetchResults = require('dcp/job').fetchResults;
 
 /**
  * Specifies a job and contains a deploy method.
@@ -148,16 +148,19 @@ class JobHandle
 
   /**
    * Gets the currently completed results from a job.
-   * @return {Array} results - an array of currently completed slices shaped like: [{ index: n, value: m }...]
+   * @return {Array} results - an array of currently completed slices shaped like: [{ sliceNumber: n, value: m }...]
    */
   async fetchResults()
   {
-    const results = await fetchSlices(this.address);
+    const results = await fetchResults(this.address);
 
-    // fetchSlices returns an array of {slice: n, value: m}, rename "slice" to "index"
+    if (results === undefined)
+      throw new HttpError(`Cannot get results for job ${this.address}`);
+
+    // fetchResults returns an array of {sliceNumber: n, value: m}, rename "slice" to "sliceNumber"
     for (const result of results)
     {
-      result.index = result.slice;
+      result.sliceNumber = result.slice;
       delete result.slice;
     }
 

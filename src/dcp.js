@@ -66,51 +66,18 @@ async function results(jobAddress, bearer)
   // caveat with the id... can only use it for jobs deployed with this oauth token, this is bad - but whatever
   // it will change in the future when we have identity figured out on the dcp side
   const idKs = await getOAuthId(bearer);
-  const conn = new protocol.Connection(dcpConfig.scheduler.services.resultSubmitter.location, idKs);
 
-  const body = {
-    operation: 'fetchResult', data: {
-      job: new wallet.Address(jobAddress),
-      owner: new wallet.Address(idKs.address),
-    }
-  };
-  const req = new conn.Request(body, idKs);
-  let success, payload;
+  // get the status and currently completed results for the job
+  const jh = new JobHandle(jobAddress, idKs);
+  const jobStatus  = await jh.status();
+  const jobResults = await jh.fetchResults();
 
-  try
-  {
-    const res = await conn.send(req);
-    success = res.success;
-    payload = res.payload;
-    console.log(res);
-  }
-
-  catch (e)
-  {
-    throw new HttpError(`-Error getting results for job ${jobAddress}`);
-  }
-  if (!success)
-    throw new HttpError(`Error getting results for job ${jobAddress}`);
-
-  console.log(payload);
-
-  for (let i = 0; i < payload.length; i++)
-  {
-    if (payload[i].value.includes("application/x-kvin"))
-      payload[i].value = kvin.deserialize(decodeURI(payload[i].value.split('data:application/x-kvin,')[1]))
-    else
-      payload[i].value = decodeURI(payload[i].value.split('data:,')[1])
-  }
-
-  // get the number of slices so far
-  const jobStatus = await status(jobAddress, bearer);
-
-  // respond with the status
+  // respond with a nice object that contains the total slices completed and an array of them
   const response = {};
   response.totalSlices = jobStatus.totalSlices;
   response.completedSlices = jobStatus.completedSlices;
   response.activeSlices = jobStatus.activeSlices;
-  response.slices = payload;
+  response.results = jobResults;
 
   return response;
 }
