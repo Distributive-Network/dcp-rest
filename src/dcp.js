@@ -2,7 +2,8 @@ const kvin = require('kvin');
 const db = require('./db');
 const webhooks = require('./webhooks/lib');
 const HttpError = require('./error').HttpError;
-const JobSpec = require('./dcp/job').JobSpec;
+const JobSpec   = require('./dcp/job').JobSpec;
+const JobHandle = require('./dcp/job').JobHandle;
 
 // dcp specific imports
 const protocol = require('dcp/protocol');
@@ -118,30 +119,10 @@ async function results(jobAddress, bearer)
 async function status(jobAddress, bearer)
 {
   const idKs = await getOAuthId(bearer);
-  const conn = new protocol.Connection(dcpConfig.scheduler.services.pheme.location, idKs);
 
-  try
-  {
-    const body = {operation: 'fetchJobReport', data: {
-      job: new wallet.Address(jobAddress),
-      jobOwner: new wallet.Address(idKs.address),
-    }};
-    const req = new conn.Request(body, idKs);
-    const { success, payload } = await conn.send(req);
-    return payload;
-  }
+  const jh = new JobHandle(jobAddress, idKs);
 
-  catch (e)
-  {
-    // TODO check if the error is because its not compat yet, if thats the error than continue
-  }
-
-  // note: the code below may be deprecated if my changes make it into develop / prod ....
-  const { success, payload } = await conn.request('fetchJobReport', {
-    job: new wallet.Address(jobAddress),
-    jobOwner: new wallet.Address(idKs.address),
-  }, idKs);
-  return payload;
+  return jh.status();
 }
 
 // cancel a job
