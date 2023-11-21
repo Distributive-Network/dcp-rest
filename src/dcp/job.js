@@ -23,6 +23,7 @@ const addSlices      = require('dcp/job').addSlices;
 const fetchResults   = require('dcp/job').fetchResults;
 const rehydrateRange = require('dcp/range-object').rehydrateRange;
 const fetchURI       = require('dcp/utils').fetchURI;
+const Connection     = require('dcp/protocol-v4').Connection;
 
 
 /**
@@ -148,35 +149,26 @@ class JobHandle
    */
   async add(newSlices)
   {
-    const { Connection } = require('dcp/protocol-v4');
-    let jobSubmitConnection = null;
     const identitykeystore = this.idKs;
-
-    function createNewConnection()
-    {
-      jobSubmitConnection = new Connection(dcpConfig.scheduler.services.jobSubmit, identitykeystore, { allowBatch: false });
-      jobSubmitConnection.on('end', createNewConnection);
-      return jobSubmitConnection.connect();
-    }
+    const jobSubmitConnection = new Connection(dcpConfig.scheduler.services.jobSubmit, identitykeystore, { allowBatch: false });
 
     if (!(newSlices instanceof Array))
       throw new HttpError(`${newSlices} is not an instance of an Array`);
-  
-    const payloadData = {
+
+    const encodedJsonData = {
       job: this.address,
       dataValues: kvin.marshal(newSlices),
     };
 
-    if (!jobSubmitConnection)
-      createNewConnection();
-
-    const request = new jobSubmitConnection.Request({
-      /* payload object */
+    const body = {
       operation: 'addSliceData',
-      jsonData:  JSON.stringify(payloadData) /* becomes payload.data in transit */
-    }, this.idKs);
+      jsonData: JSON.stringify(encodedJsonData),
+    };
 
+    const request = new jobSubmitConnection.Request(body, this.idKs);
     const { success, payload } = await request.send();
+
+    jobSubmitConnection.close();
 
     if (!success)
       throw new HttpError(`Failure to upload slices for job ${this.address}`);
