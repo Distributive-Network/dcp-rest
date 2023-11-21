@@ -172,7 +172,10 @@ class JobHandle
 
     if (!success)
       throw new HttpError(`Failure to upload slices for job ${this.address}`);
-    
+
+    // delete pointless success marker
+    delete payload.success;
+
     return payload;
   } 
 
