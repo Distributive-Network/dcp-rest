@@ -188,6 +188,22 @@ class JobHandle
       throw new HttpError(`Request to fetchJobReport failed for job ${this.address}`);
     return payload;
   }
+
+  /**
+   * Cancels a job.
+   */
+  async cancel(reason)
+  {
+    const { success, payload } = await this.jobSubmitConnection.request('cancelJob', {
+      job: this.address,
+      reason,
+    }, this.idKs);
+
+    if (!success)
+      throw new HttpError(`Unable to cancel job ${this.address}`);
+
+    return payload;
+  }
 }
 
 exports.JobSpec = JobSpec;

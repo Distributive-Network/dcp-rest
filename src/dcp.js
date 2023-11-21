@@ -86,9 +86,7 @@ async function results(jobAddress, bearer)
 async function status(jobAddress, bearer)
 {
   const idKs = await getOAuthId(bearer);
-
   const jh = new JobHandle(jobAddress, idKs);
-
   return jh.status();
 }
 
@@ -96,17 +94,8 @@ async function status(jobAddress, bearer)
 async function cancelJob(jobAddress, reqBody, bearer)
 {
   const idKs = await getOAuthId(bearer);
-  const conn = new protocol.Connection(dcpConfig.scheduler.services.jobSubmit.location, idKs)
-
-  const reason = reqBody.reason;
-
-  const { success, payload } = await conn.request('cancelJob', {
-    job: new wallet.Address(jobAddress),
-//    jobOwner: new wallet.Address(idKs.address),
-    reason: reason,
-  }, idKs);
-
-  return payload;
+  const jh = new JobHandle(jobAddress, idKs);
+  return jh.cancel(reqBody.reason);
 }
 
 async function countJobs(bearer)
