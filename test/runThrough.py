@@ -3,10 +3,19 @@
 import requests
 import time
 
+def list_bank_accounts():
+    url = "http://bestia.office.distributive.network/api/accounts"
+    headers = {
+        "Authorization": "Bearer 9ffdd4e335fb0aa87588.DjehbjdhIenIxT--TmiLwnGVQkM7PydsIey0PhBIFhs",
+    }
+
+    response = requests.get(url, headers=headers)
+    print(response.json())
+
 def make_post_request():
     url = "http://bestia.office.distributive.network/api/job"
     headers = {
-        "Authorization": "Bearer 2f0a408399b3ee509d72.JdtP66UWkXt6OuxU7vsTgQ50TXEEiWdAQZRIc9Cunr0",
+        "Authorization": "Bearer 9ffdd4e335fb0aa87588.DjehbjdhIenIxT--TmiLwnGVQkM7PydsIey0PhBIFhs",
         "Content-Type": "application/json"
     }
     data = {
@@ -16,7 +25,7 @@ def make_post_request():
             "function": "(datum) => { progress(); return datum * 2; }"
         },
         "account": {
-            "address": "0xa4f0E52de1385A722e364Ccb5b39e4469A71F658"
+            "address": "0x10A5C517c7F7A3bEDfFD574bDcFFEbCa0Ac0EbD5"
         }
     }
     response = requests.post(url, json=data, headers=headers)
@@ -28,7 +37,7 @@ def make_post_request():
 
 def make_get_requests(job_address):
     headers = {
-        "Authorization": "Bearer 2f0a408399b3ee509d72.JdtP66UWkXt6OuxU7vsTgQ50TXEEiWdAQZRIc9Cunr0"
+        "Authorization": "Bearer 9ffdd4e335fb0aa87588.DjehbjdhIenIxT--TmiLwnGVQkM7PydsIey0PhBIFhs"
     }
 
     # Check the job result
@@ -43,6 +52,12 @@ def make_get_requests(job_address):
         print(f"Status for {endpoint}: {response.status_code}")
 
 # Main execution
+list_bank_accounts()
+
 job_address = make_post_request()
+
+print(job_address)
+
 if job_address:
     make_get_requests(job_address)
+

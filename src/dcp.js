@@ -31,10 +31,33 @@ async function unlockBankAccount(bankAccounts, address, password)
 async function getBankAccounts(reqBody, bearer)
 {
   const idKs = await getOAuthId(bearer);
-  const portalConnection = new protocol.Connection(dcpConfig.portal, idKs);
-  const response = await portalConnection.request('viewKeystores', {});
+  const bankAccounts = [];
 
-  return response.payload;
+  // parse through and only return a list of objects with name and address
+  const accountKeystores = await getBankAccountKeystores(idKs);
+  for (const accountKeystore of accountKeystores)
+  {
+    bankAccounts.push({
+      name:    accountKeystore.label,
+      address: accountKeystore.address,
+      balance: accountKeystore.balance,
+    });
+  }
+
+  return bankAccounts;
+}
+
+async function getBankAccountKeystores(idKs) 
+{
+  const portalConnection = new protocol.Connection(dcpConfig.portal, idKs);
+  const { payload, success } = await portalConnection.request('viewKeystores', {});
+
+  if (!success)
+    throw new HttpError('Request to viewKeystores failed');
+
+  console.log(payload);
+
+  return payload;
 }
 
 
@@ -50,7 +73,7 @@ async function deployJobDCP(reqBody, bearer)
   wallet.addId(oauthId);
 
   // unlock and set the banka ccount
-  const accounts = await getBankAccounts(reqBody, bearer);
+  const accounts = await getBankAccountKeystores(oauthId);
   const bankKs = await unlockBankAccount(accounts, bankAddress, bankPassword);
   if (bankKs === null)
     throw new HttpError(`DCP bank account ${bankAddress} not found`);
