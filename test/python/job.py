@@ -112,3 +112,24 @@ def test_job_cancel():
     # check if the number of total slices is correct
     assert resp.json()['status'] == 'cancelled'
 
+def test_job_result():
+    # deploy job
+    job = compute_for(
+        [1,2,3,4,5],
+        'js',
+        '(datum) => { progress(); return datum * 2; }',
+    )
+    resp = deploy_job(job)
+    job_id = resp.json()["jobId"]
+
+    # get the results completed so far
+    url = f'{API_URL}/job/{job_id}/result'
+    resp = requests.get(url, headers=HEADERS)
+
+    # check the status
+    assert resp.status_code == 200 
+
+    # check if a results array was returned
+    slices = resp.json()['results']
+    assert type(slices).__name__ == 'list'
+
