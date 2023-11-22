@@ -29,7 +29,7 @@ router.post('/job', async (req, res, next) => {
   try
   {
     const jobId = await dcp.deployJobDCP(req.body, req.headers.authorization);
-    res.send({ jobId: jobId });
+    res.status(201).send({ jobId: jobId });
   }
   catch (error)
   {
