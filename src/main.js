@@ -44,7 +44,7 @@ router.post('/job/:id/slices', async (req, res) => {
   try
   {
     const addResponse = await dcp.addSlices(jobAddress, req.body, req.headers.authorization);
-    res.send(addResponse);
+    res.status(201).send(addResponse);
   }
   catch (error)
   {

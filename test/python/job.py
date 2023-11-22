@@ -133,3 +133,29 @@ def test_job_result():
     slices = resp.json()['results']
     assert type(slices).__name__ == 'list'
 
+def test_job_addslc():
+    # deploy job
+    job = compute_for(
+        [1,2,3,4,5],
+        'js',
+        '(datum) => { progress(); return datum * 2; }',
+    )
+    resp = deploy_job(job)
+    job_id = resp.json()["jobId"]
+
+    # add 3 slices to the job
+    url = f'{API_URL}/job/{job_id}/slices'
+    data = {
+        'sliceData': [100,200,300],
+    }
+    resp = requests.post(url, json=data, headers=HEADERS)
+
+    # check the status
+    assert resp.status_code == 201
+
+    # check if the total slices is 5 + 3
+    url = f'{API_URL}/job/{job_id}/status'
+    resp = requests.get(url, headers=HEADERS)
+
+    assert resp.json()['totalSlices'] == 5 + 3
+
