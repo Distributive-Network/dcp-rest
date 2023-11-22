@@ -80,7 +80,7 @@ router.get('/job/:id/status', async (req, res) => {
 router.delete('/job/:id', async (req, res) => {
   const jobAddress = req.params.id;
   const jobCancellation = await dcp.cancelJob(jobAddress, req.body, req.headers.authorization) 
-  res.send(jobCancellation);
+  res.status(204).send(jobCancellation);
 });
 
 // lists all jobs owned by the requesting identity

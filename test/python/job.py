@@ -48,7 +48,7 @@ def test_job_deploy():
     job = compute_for(
         [1,2,3,4,5],
         'js', 
-        '(datum) => { progress(); return datum *2; }',
+        '(datum) => { progress(); return datum * 2; }',
     )
     resp = deploy_job(job)
 
@@ -56,7 +56,7 @@ def test_job_deploy():
     assert resp.status_code == 201
 
     # check that a 40 digit long hex code was returned as a jobId in the response
-    job_id = resp.json()["jobId"]
+    job_id = resp.json()['jobId']
 
     def is_hex(s):
         try:
@@ -73,7 +73,7 @@ def test_job_status():
     job = compute_for(
         [1,2,3,4,5],
         'js', 
-        '(datum) => { progress(); return datum *2; }',
+        '(datum) => { progress(); return datum * 2; }',
     )
     resp = deploy_job(job)
     job_id = resp.json()["jobId"]
@@ -85,8 +85,30 @@ def test_job_status():
     # check the status
     assert resp.status_code == 200
 
-    # check if the response body has required fields
-    print(resp.json())
+    # check if the number of total slices is correct
+    assert resp.json()['totalSlices'] == 5
 
+def test_job_cancel():
+    # deploy job
+    job = compute_for(
+        [1,2,3,4,5],
+        'js',
+        '(datum) => { progress(); return datum * 2; }',
+    )
+    resp = deploy_job(job)
+    job_id = resp.json()["jobId"]
 
+    # cancel the job
+    url = f'{API_URL}/job/{job_id}'
+    resp = requests.delete(url, headers=HEADERS)
+
+    # check the status
+    assert resp.status_code == 204
+
+    # check if the status is cancelled
+    url = f'{API_URL}/job/{job_id}/status'
+    resp = requests.get(url, headers=HEADERS)
+
+    # check if the number of total slices is correct
+    assert resp.json()['status'] == 'cancelled'
 
