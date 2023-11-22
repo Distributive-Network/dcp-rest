@@ -2,7 +2,8 @@ const kvin = require('kvin');
 const db = require('./db');
 const webhooks = require('./webhooks/lib');
 const HttpError = require('./error').HttpError;
-const JobSpec = require('./dcp/job').JobSpec;
+const JobSpec   = require('./dcp/job').JobSpec;
+const JobHandle = require('./dcp/job').JobHandle;
 
 // dcp specific imports
 const protocol = require('dcp/protocol');
@@ -59,57 +60,35 @@ async function deployJobDCP(reqBody, bearer)
   return await jobSpec.deploy();
 }
 
+// append slices to a running job
+async function addSlices(jobAddress, reqBody, bearer)
+{
+  const idKs = await getOAuthId(bearer);
+
+  // try to add slices to the job
+  const jh = new JobHandle(jobAddress, idKs);
+
+  return jh.add(reqBody.sliceData);
+}
+
 // get results
 async function results(jobAddress, bearer)
 {
   // caveat with the id... can only use it for jobs deployed with this oauth token, this is bad - but whatever
   // it will change in the future when we have identity figured out on the dcp side
   const idKs = await getOAuthId(bearer);
-  const conn = new protocol.Connection(dcpConfig.scheduler.services.resultSubmitter.location, idKs);
 
-  const body = {
-    operation: 'fetchResult', data: {
-      job: new wallet.Address(jobAddress),
-      owner: new wallet.Address(idKs.address),
-    }
-  };
-  const req = new conn.Request(body, idKs);
-  let success, payload;
+  // get the status and currently completed results for the job
+  const jh = new JobHandle(jobAddress, idKs);
+  const jobStatus  = await jh.status();
+  const jobResults = await jh.fetchResults();
 
-  try
-  {
-    const res = await conn.send(req);
-    success = res.success;
-    payload = res.payload;
-    console.log(res);
-  }
-
-  catch (e)
-  {
-    throw new HttpError(`-Error getting results for job ${jobAddress}`);
-  }
-  if (!success)
-    throw new HttpError(`Error getting results for job ${jobAddress}`);
-
-  console.log(payload);
-
-  for (let i = 0; i < payload.length; i++)
-  {
-    if (payload[i].value.includes("application/x-kvin"))
-      payload[i].value = kvin.deserialize(decodeURI(payload[i].value.split('data:application/x-kvin,')[1]))
-    else
-      payload[i].value = decodeURI(payload[i].value.split('data:,')[1])
-  }
-
-  // get the number of slices so far
-  const jobStatus = await status(jobAddress, bearer);
-
-  // respond with the status
+  // respond with a nice object that contains the total slices completed and an array of them
   const response = {};
   response.totalSlices = jobStatus.totalSlices;
   response.completedSlices = jobStatus.completedSlices;
   response.activeSlices = jobStatus.activeSlices;
-  response.slices = payload;
+  response.results = jobResults;
 
   return response;
 }
@@ -118,47 +97,27 @@ async function results(jobAddress, bearer)
 async function status(jobAddress, bearer)
 {
   const idKs = await getOAuthId(bearer);
-  const conn = new protocol.Connection(dcpConfig.scheduler.services.pheme.location, idKs);
+  const jh = new JobHandle(jobAddress, idKs);
+  const jobStatus = await jh.status();
 
-  try
-  {
-    const body = {operation: 'fetchJobReport', data: {
-      job: new wallet.Address(jobAddress),
-      jobOwner: new wallet.Address(idKs.address),
-    }};
-    const req = new conn.Request(body, idKs);
-    const { success, payload } = await conn.send(req);
-    return payload;
-  }
+  // TODO do some sort of error checking on jobStatus
 
-  catch (e)
-  {
-    // TODO check if the error is because its not compat yet, if thats the error than continue
-  }
+  // since all jobs submitted by the api are "open" its not really valuable for users
+  // to see that their job is "running" when its completed all slices... So we'll instead
+  // check to see if all the slices deployed for the job have been completed, and we'll set
+  // the status to "completed"
+  if (jobStatus.totalSlices === jobStatus.completedSlices)
+    jobStatus.status = 'completed';
 
-  // note: the code below may be deprecated if my changes make it into develop / prod ....
-  const { success, payload } = await conn.request('fetchJobReport', {
-    job: new wallet.Address(jobAddress),
-    jobOwner: new wallet.Address(idKs.address),
-  }, idKs);
-  return payload;
+  return jobStatus;
 }
 
 // cancel a job
 async function cancelJob(jobAddress, reqBody, bearer)
 {
   const idKs = await getOAuthId(bearer);
-  const conn = new protocol.Connection(dcpConfig.scheduler.services.jobSubmit.location, idKs)
-
-  const reason = reqBody.reason;
-
-  const { success, payload } = await conn.request('cancelJob', {
-    job: new wallet.Address(jobAddress),
-//    jobOwner: new wallet.Address(idKs.address),
-    reason: reason,
-  }, idKs);
-
-  return payload;
+  const jh = new JobHandle(jobAddress, idKs);
+  return jh.cancel(reqBody.reason);
 }
 
 async function countJobs(bearer)
@@ -256,4 +215,5 @@ exports.countJobs    = countJobs;
 exports.listJobs     = listJobs;
 exports.getAccounts  = getBankAccounts;
 exports.getIdentity  = getIdentity;
+exports.addSlices    = addSlices;
 

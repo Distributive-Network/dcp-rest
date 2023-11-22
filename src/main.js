@@ -37,6 +37,22 @@ router.post('/job', async (req, res, next) => {
   }
 });
 
+// add slices to a running job
+router.post('/job/:id/slices', async (req, res) => {
+  const jobAddress = req.params.id;
+
+  try
+  {
+    const addResponse = await dcp.addSlices(jobAddress, req.body, req.headers.authorization);
+    res.send(addResponse);
+  }
+  catch (error)
+  {
+    console.log(error);
+    res.status(502).send("why");
+  }
+});
+
 // return job results
 router.get('/job/:id/result', async (req, res, next) => {
   const jobAddress = req.params.id;

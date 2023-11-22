@@ -9,11 +9,22 @@
 
 'use strict';
 
+const kvin = require('kvin');
+
 const HttpError = require('../error').HttpError;
 const workFunctionTransformer = require('./work-function');
 const webhooks = require('../webhooks/lib');
 
-const compute  = require('dcp/compute');
+const compute        = require('dcp/compute');
+const dcpConfig      = require('dcp/dcp-config');
+const protocol       = require('dcp/protocol');
+const wallet         = require('dcp/wallet');
+const addSlices      = require('dcp/job').addSlices;
+const fetchResults   = require('dcp/job').fetchResults;
+const rehydrateRange = require('dcp/range-object').rehydrateRange;
+const fetchURI       = require('dcp/utils').fetchURI;
+const Connection     = require('dcp/protocol-v4').Connection;
+
 
 /**
  * Specifies a job and contains a deploy method.
@@ -35,11 +46,12 @@ class JobSpec
     const additionalRequires = work.requires || [];
 
     // use the this.#jobRef variable to store a reference to job
-    const job = compute.for(options.slices, this.workFunction, options.args);
+    const job = compute.for(options.slices || [], this.workFunction, options.args);
     this.#jobRef = job;
     job.computeGroups = options.computeGroups || job.computeGroups;
     job.requirements  = options.requirements  || [];
     job.public        = options.public        || { name: 'Restfully helping make the world smarter' };
+    job.autoClose     = false; // all jobs deployed by dcp-rest are open by default.
 
     // webhook: TODO drop this functionality later
     if (options.webHookUrls)
@@ -98,5 +110,158 @@ class JobSpec
   }
 }
 
+/**
+ * Represents a handle to a running job.
+ */
+class JobHandle
+{
+  /**
+   * Constructor.
+   * @constructor
+   * @param {string} jobId - the running job's address 
+   * @param {Keystore} identityKs - unlocked proxy id keystore associated with the job
+   */
+  constructor(jobId, idKeystore, idPassword)
+  {
+    // check if the job exists
+    // TODO check if the job exists before doing anything... whats the easiest way to do that?
+
+    this.address    = new wallet.Address(jobId);
+    this.idKs       = idKeystore;
+
+    // connections - TODO wrap connections in generic getter that will automatically reconnect if they're down
+    this.phemeConnection           = new protocol.Connection(dcpConfig.scheduler.services.pheme.location,           this.idKs);
+    this.resultSubmitterConnection = new protocol.Connection(dcpConfig.scheduler.services.resultSubmitter.location, this.idKs);
+    this.jobSubmitConnection       = new protocol.Connection(dcpConfig.scheduler.services.jobSubmit.location,       this.idKs);
+  }
+
+  /**
+   * Gets the address associated with the identity keystore associated with the job.
+   */
+  get #identityAddress()
+  {
+    return new wallet.Address(this.idKs.address);
+  }
+
+  /**
+   * Adds slices to a currently running job.
+   * @param {Array} sliceData - an array of slice data to add to the job to execute
+   */
+  async add(newSlices)
+  {
+    const identitykeystore = this.idKs;
+    const jobSubmitConnection = new Connection(dcpConfig.scheduler.services.jobSubmit, identitykeystore, { allowBatch: false });
+
+    if (!(newSlices instanceof Array))
+      throw new HttpError(`${newSlices} is not an instance of an Array`);
+
+    const encodedJsonData = {
+      job: this.address,
+      dataValues: kvin.marshal(newSlices),
+    };
+
+    const body = {
+      operation: 'addSliceData',
+      jsonData: JSON.stringify(encodedJsonData),
+    };
+
+    const request = new jobSubmitConnection.Request(body, this.idKs);
+    const { success, payload } = await request.send();
+
+    jobSubmitConnection.close();
+
+    if (!success)
+      throw new HttpError(`Failure to upload slices for job ${this.address}`);
+
+    // delete pointless success marker
+    delete payload.success;
+
+    return payload;
+  } 
+
+  /**
+   * Gets the currently completed results from a job.
+   * @return {Array} results - an array of currently completed slices shaped like: [{ sliceNumber: n, value: m }...]
+   */
+  async fetchResults(rangeObject)
+  {
+    var range = rangeObject;
+    const results = [];
+
+    if (range)
+      range = rehydrateRange(rangeObject);
+
+    const body = {
+      operation: 'fetchResult',
+      data: {
+        job: this.address,
+        owner: this.idKs.address,
+        range,
+      }
+    };
+
+    const request = new this.resultSubmitterConnection.Request(body, this.idKs);
+    const { success, payload } = await this.resultSubmitterConnection.send(request);
+
+    if (!success)
+      throw new HttpError(`Cannot get results for job ${this.address.address}`);
+
+    // fetchResults returns an array of {sliceNumber: n, value: m}, rename "slice" to "sliceNumber"
+    for (const encodedResult of payload)
+    {
+      const result = {
+        sliceNumber: encodedResult.slice,
+        value: await fetchURI(decodeURIComponent(encodedResult.value)),
+      };
+
+      results.push(result);
+    }
+
+    return results;
+  }
+
+  /**
+   * Gets the status of a currently running job.
+   * @return {object} statusObj - object containing status information
+   */
+  async status()
+  {
+    const body = {
+      operation: 'fetchJobReport',
+      data: {
+        job:      this.address,
+        jobOwner: this.#identityAddress,
+      }
+    };
+
+    const request = new this.phemeConnection.Request(body, this.idKs);
+    const { success, payload } = await this.phemeConnection.send(request);
+
+    if (!success)
+      throw new HttpError(`Request to fetchJobReport failed for job ${this.address}`);
+    return payload;
+  }
+
+  /**
+   * Cancels a job.
+   */
+  async cancel(reason)
+  {
+    debugger;
+    const request = new this.jobSubmitConnection.Request({ operation: 'cancelJob', data: {
+      job: this.address,
+      reason,
+    }}, this.idKs);
+
+    const { success, payload } = await this.jobSubmitConnection.send(request);
+
+    if (!success)
+      throw new HttpError(`Unable to cancel job ${this.address}`);
+
+    return payload;
+  }
+}
+
 exports.JobSpec = JobSpec;
+exports.JobHandle = JobHandle;
 
