@@ -92,11 +92,6 @@ class JobSpec
         console.log(`Job with id ${this.#jobRef.id} accepted by the scheduler`);
         resolve(this.#jobRef.address);
       });
-
-      this.#jobRef.on('readystatechange', (state) => {
-        if (this.#jobRef.id !== null)
-          resolve(this.#jobRef.address);
-      });
     });
 
     // if using webhooks, associate the jobId with the appId
