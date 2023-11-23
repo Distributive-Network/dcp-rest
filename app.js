@@ -36,6 +36,8 @@ function setUpExpressServer()
   const spec = path.join(__dirname, 'spec.yaml');
 
   // routes
+  app.use(express.static('public'));
+
   app.use('/', routes);
 
   app.use('/spec', express.static(spec));
