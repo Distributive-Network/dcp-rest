@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-API_KEY='236414f26fe26b6459aa.13Z6_GlQQj7REYkM_ivaIsEkt70WeM_2kBZBNngVowU'
+API_KEY='9bbf581794493c1de68d.g_t-PTEVeRveFLmGLVCdesSz2HOFuLheCsU9prpXhaI'
 API_URL='http://bestia.office.distributive.network/api'
 
 import requests
@@ -13,5 +13,5 @@ headers = {
 
 response = requests.get(f'{API_URL}/job/{job_id}/status', headers=headers)
 
-print(response)
+print(response.json())
 

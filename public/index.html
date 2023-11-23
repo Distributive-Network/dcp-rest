@@ -170,7 +170,7 @@ headers = {
 
 response = requests.get(f'{API_URL}/job/{job_id}/status', headers=headers)
 
-print(response)
+print(response.json())
             </pre></code>
         </div>
     </div>
