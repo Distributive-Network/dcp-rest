@@ -132,6 +132,69 @@ paths:
                   error:
                     type: string
                     description: A detailed error message.
+  /job/{jobId}/status:
+    get:
+      summary: Get a job's status
+      description: Retrieves the status of a specific job.
+      responses:
+        '200':
+          description: Successfully retrieved job status.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                    status:
+                        type: string
+                        description: Current status of the job. (estimation, running, cancelled, corrupted, paused, completed).
+                    totalSlices:
+                        type: number
+                        description: Total slices deployed so far.
+                    activeSlices:
+                        type: number
+                        description: Current slices active.
+                    completedSlices:
+                        type: number
+                        description: Slices completed so far.
+                    totalCPUTime:
+                        type: number
+                        description: TODO 
+                    totalGPUTime:
+                        type: number
+                        description: TODO
+        '404':
+          description: Job not found.
+  /job/{jobId}/result:
+    get:
+      summary: Get a job's results
+      description: Retrieves the results that have been completed so far.
+      responses:
+        200:
+          description: Successfully retrieved job result.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                    results:
+                        type: array
+                        items: 
+                          type: object
+                          properties:
+                            sliceNumber:
+                                type: integer
+                            value:
+                                type: object
+                    totalSlices:
+                        type: integer
+                    completedSlices:
+                        type: integer
+                    activeSlices:
+                        type: integer
+
+                    
+        '404':
+          description: Job not found.
 components:
   securitySchemes:
     bearerAuth:
@@ -139,3 +202,4 @@ components:
       scheme: bearer
 security:
   - bearerAuth: []
+
