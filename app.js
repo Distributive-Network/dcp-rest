@@ -13,6 +13,7 @@
 const express = require('express');
 const path = require('path');
 const http = require('http');
+const cors = require('cors');
 
 const dcpInit = require('./src/dcp/init').init;
 
@@ -34,6 +35,8 @@ function setUpExpressServer()
 
   // server openAPI spec at /spec and use it to validate requests
   const spec = path.join(__dirname, 'spec.yaml');
+
+  app.use(cors());
 
   // routes
   app.use(express.static('public'));

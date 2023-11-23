@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Restful DCP</title>
+
+<script>
+const OAUTH_URL = 'http://secure-lab.distributed.computer';
+//const OAUTH_URL = 'http://oauth.bestia.office.distributive.network';
+const CLIENT_ID = 'a-c2T7AF2Cj77hqSyEGkoRJDsutCplucSWD8Y4b3I4o'
+//const CLIENT_ID = 'IgwnWboNJgZwYXjnNR_ffUnGXvkvjXL6qLzSbKcI4Y';
+const OAUTH_URL_CODEGEN = `${OAUTH_URL}/oauth/authorize_device`;
+const OAUTH_URL_TOKEN   = `${OAUTH_URL}/oauth/token`;
+
+async function loginOAuth()
+{
+  console.log('Logging in to DCP...');
+
+  // send a device authorization request
+  const rawDevAuthResp = await fetch(OAUTH_URL_CODEGEN, {
+    method: 'POST',
+    body: new URLSearchParams({ 'client_id': CLIENT_ID, 'scope': 'login' }),
+    headers: { 'Content-type': 'application/x-www-form-urlencoded' }
+  });
+  if (!rawDevAuthResp.ok) // error requesting 
+  {
+    console.log('Error in token request');
+    console.log(await rawDevAuthResp.text());
+  }
+  
+  const devAuthResp = await rawDevAuthResp.json();
+  if (!devAuthResp.user_code) 
+  {
+    console.log('badly formed response from login server');
+  }
+
+  // open iframe - don't close it until we've pollToken succeded
+  console.log(`${devAuthResp.verification_uri_complete}`);
+  const devicePopup = window.open(devAuthResp.verification_uri_complete, 'Popup', 'width=600,height=400,left=200,top=200');
+  let deviceIFrame;
+
+/*
+  myIframe = document.createElement('iframe');
+  myIframe.src = devAuthResp.verification_uri_complete;
+  myIframe.width = "600";
+  myIframe.height = "700";
+  document.getElementById('iframeContainer').appendChild(myIframe);
+*/
+
+  const proxy = await pollToken(devAuthResp.device_code, CLIENT_ID, devAuthResp.interval);
+
+/*
+  if (myIframe) {
+    myIframe.style.display = 'none';
+  }  
+*/
+
+  devicePopup.close();
+
+  document.getElementById('apikeypaste').innerHTML = '...';
+
+  // make a request to the server for a new api key...
+  const proxyData = {
+    keystore: proxy.keystore,
+    token:    proxy.access_token,
+    email:    proxy.email,
+  };
+  const newAPIKey = await fetch('http://bestia.office.distributive.network/api/key',{
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(proxyData),
+  });
+
+  console.log(newAPIKey);
+
+  return proxyData;
+}
+
+async function pollToken(device_code, client_id, interval)
+{
+  await timeout(interval * 1007);
+  const rawPollResp = await fetch(OAUTH_URL_TOKEN, {
+    method: 'POST',
+    body: new URLSearchParams({
+      'grant_type' : 'urn:ietf:params:oauth:grant-type:device_code',
+      'device_code': device_code,
+      'client_id': client_id
+    }),
+    headers: { 'Content-type': 'application/x-www-form-urlencoded' }
+  });
+  if (rawPollResp.status === 400) // expected
+  {
+    const pollResp = await rawPollResp.json();
+    switch (pollResp.error)
+    {
+      case 'authorization_pending': // not ready yet, wait and retry
+        return pollToken(device_code, client_id, interval);
+      case 'slow_down': // must slow by 5 seconds
+        interval += 5;
+        return pollToken(device_code, client_id, interval);
+      default:
+        console.log('Failure signgin into oauth');
+    }
+  }
+  else if (rawPollResp.status === 200) // login success
+  {
+    console.log('Login succeeded.');
+    return rawPollResp.json();
+  }
+}
+
+
+function timeout(time)
+{
+  return new Promise((resolve, reject) => {
+    setTimeout(resolve, time);
+  });
+}
+
+async function main()
+{
+  const r = await loginOAuth();
+  console.log(r);
+}
+
+//main();
+</script>
+<style>
+
+@font-face {
+	font-family: 'proxima_nova_rgregular';
+	src: url('https://litmus.com/fonts/Emails/proximanova-regular-webfont.eot');
+	src: url('https://litmus.com/fonts/Emails/proximanova-regular-webfont.eot?#iefix') format('embedded-opentype'),
+		 url('https://litmus.com/fonts/Emails/proximanova-regular-webfont.woff') format('woff'),
+		 url('https://litmus.com/fonts/Emails/proximanova-regular-webfont.ttf') format('truetype'),
+		 url('https://litmus.com/fonts/Emails/proximanova-regular-webfont.svg#proxima_nova_rgregular') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+@font-face {
+	font-family: 'proxima_nova_rgbold';
+	src: url('https://litmus.com/fonts/Emails/proximanova-bold-webfont.eot');
+	src: url('https://litmus.com/fonts/Emails/proximanova-bold-webfont.eot?#iefix') format('embedded-opentype'),
+		 url('https://litmus.com/fonts/Emails/proximanova-bold-webfont.woff') format('woff'),
+		 url('https://litmus.com/fonts/Emails/proximanova-bold-webfont.ttf') format('truetype'),
+		 url('https://litmus.com/fonts/Emails/proximanova-bold-webfont.svg#proxima_nova_rgbold') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'adelle_rgregular';
+	src: url('https://litmus.com/fonts/Emails/adelle_reg-webfont.eot');
+	src: url('https://litmus.com/fonts/Emails/adelle_reg-webfont.eot?#iefix') format('embedded-opentype'),
+		 url('https://litmus.com/fonts/Emails/adelle_reg-webfont.woff') format('woff'),
+		 url('https://litmus.com/fonts/Emails/adelle_reg-webfont.ttf') format('truetype'),
+		 url('https://litmus.com/fonts/Emails/adelle_reg-webfont.svg#adelle_rgregular') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+body{
+	font-family: 'proxima_nova_rgregular', Helvetica, Arial, sans-serif;
+}
+
+h1, h2, h3{
+   font-family: 'proxima_nova_rgbold', Helvetica, Arial, sans-serif;
+}
+
+    body, html {
+        margin: 0;
+        padding: 0;
+        font-family: 'Arial', sans-serif;
+        background: #f4f4f4;
+    }
+    .green-background {
+        background-color: #00a76c;
+        color: white;
+        padding: 0px 40px;
+    }
+    .container {
+        max-width: 800px;
+        margin: auto;
+        overflow: hidden;
+    }
+    .content-block {
+        background: #fff;
+        padding: 20px;
+        margin: 20px 0;
+    }
+    .header, .content-block h2, .content-block h3 {
+        margin: 0 0 20px 0;
+    }
+    h1 {
+      font-weight: bold;
+      color: #fff;
+      font-size: 100px;
+    }
+    h2 {
+        color: #00a76c;
+    }
+    a {
+        color: #00a76c;
+        text-decoration: none;
+        display: inline-block;
+        margin: 5px 0;
+        text-decoration: underline;
+    }
+    .code-block {
+        border-left: 5px solid #00a76c;
+    }
+    .center {
+      margin: auto;
+      width: 50%;
+    }
+</style>
+</head>
+<body>
+
+<div class="green-background">
+    <div class="container">
+        <h1>Restful DCP</h1>
+        <p><em>A Restful HTTP API for DCP</em></p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="content-block">
+        <h2>Generate a new API Token</h2>
+        <p>In order to generate a new API token, click the button below. This will open a login box. Enter your DCP credentials here. Once you're logged in, you'll be redirected to an authorize page. Click Authorize and your api key will be created. This may take a few seconds. Please make sure popups are enabled on this site.
+        <br>
+        <br>
+        <button onclick="main()">Generate New API Key</button>
+        <div id="iframeContainer"></div>
+        <pre id="apikeypaste"></pre>
+    </div>
+
+    <div class="content-block">
+        <a href="index.html">Restful DCP</a>
+        <a></a>
+        <a></a>
+        <a></a>
+        <a href="docs.html">Read the API docs</a>
+    </div>
+
+</div>
+
+</body>
+</html>
+
+
+

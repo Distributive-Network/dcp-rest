@@ -100,9 +100,16 @@ router.get('/accounts', async (req, res) => {
   res.send(await dcp.getAccounts({}, req.headers.authorization));
 });
 
-// point to where you can generate the locksmith stuff
-router.get('/', (req, res) => {
-  res.send(`Generate an API token here: ${process.env.LOCKSMITH_URL}`);
+// create an api key with an identity keystore... This is useful for the node oauth shim
+// It's unusual for an api to allow the creation of api keys, but whatever...
+router.post('/key', async (req, res) => {
+  const keystore = req.body.keystore;
+  const password = req.body.token;
+
+  console.log(keystore);
+  console.log(password);
+
+  res.send(`hello world~${password}`);
 });
 
 module.exports.router = router;
