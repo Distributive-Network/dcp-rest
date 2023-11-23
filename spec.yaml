@@ -1,13 +1,14 @@
 openapi: 3.0.0
 info:
   version: 1.0.0
-  title: Bestia API Documentation
+  title: Restful DCP API Documentation
 servers:
   - url: http://bestia.office.distributive.network/api/
+  - url: http://rhea.office.distributive.network/api/
 paths:
   /job:
     post:
-      summary: Deploy a Job and get back a job handle
+      summary: Deploy a Job
       requestBody:
         required: true
         content:
@@ -94,7 +95,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  jobAddress:
+                  jobId:
                     type: string
         400:
           description: Bad request. Invalid input or missing required properties.
