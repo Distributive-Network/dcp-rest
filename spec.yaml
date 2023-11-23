@@ -133,37 +133,6 @@ paths:
                   error:
                     type: string
                     description: A detailed error message.
-    get:
-      summary: Job - Status 
-      description: Retrieves the status of a specific job.
-      responses:
-        '200':
-          description: Successfully retrieved job status.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                    status:
-                        type: string
-                        description: Current status of the job. (estimation, running, cancelled, corrupted, paused, completed).
-                    totalSlices:
-                        type: number
-                        description: Total slices deployed so far.
-                    activeSlices:
-                        type: number
-                        description: Current slices active.
-                    completedSlices:
-                        type: number
-                        description: Slices completed so far.
-                    totalCPUTime:
-                        type: number
-                        description: TODO 
-                    totalGPUTime:
-                        type: number
-                        description: TODO
-        '404':
-          description: Job not found.
   /job/{jobId}/slices:
     post:
       summary: Job - Add Slices
@@ -204,6 +173,37 @@ paths:
         '404':
           description: Job not found.
   /job/{jobId}:
+    get:
+      summary: Job - Status 
+      description: Retrieves the status of a specific job.
+      responses:
+        '200':
+          description: Successfully retrieved job status.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                    status:
+                        type: string
+                        description: Current status of the job. (estimation, running, cancelled, corrupted, paused, completed).
+                    totalSlices:
+                        type: number
+                        description: Total slices deployed so far.
+                    activeSlices:
+                        type: number
+                        description: Current slices active.
+                    completedSlices:
+                        type: number
+                        description: Slices completed so far.
+                    totalCPUTime:
+                        type: number
+                        description: TODO 
+                    totalGPUTime:
+                        type: number
+                        description: TODO
+        '404':
+          description: Job not found.
     delete:
       summary: Job - Cancel
       description: Cancels a running job, no more slices will be computed
