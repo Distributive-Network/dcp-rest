@@ -136,24 +136,24 @@ h1, h2, h3{
 import requests
 
 data = {
-	"slices": [1,2,3,4,5,6],
-	"work": {
-    	"function": "(datum) => { progress(); return datum * 2; }",
-    	"language": "JavaScript",
-	},
-	"account": {
-    	"address": account,
-    	"password": account_password
-	}
+    "slices": [1,2,3,4,5,6],
+    "work": {
+        "function": "(datum) => { progress(); return datum * 2; }",
+        "language": "JavaScript",
+    },
+    "account": {
+        "address": ACCOUNT,
+        "password": ACCOUNT_PASSWORD, 
+    }
 }
 
 headers = {
-	'Authorization': 'Bearer ' + my_bearer_token
+    'Authorization': 'Bearer ' + API_KEY 
 }
 
-response = requests.post(f"{DCP_API_URL}/job", json=data, headers=headers)
+response = requests.post(f"{API_URL}/job", json=data, headers=headers)
 
-print(response) # { "jobId": "0x1234512345123451234512345123451234512345" }
+print(response.json()) # { "jobId": "0x1234512345123451234512345123451234512345" }
             </pre></code>
         </div>
        
@@ -162,11 +162,13 @@ print(response) # { "jobId": "0x1234512345123451234512345123451234512345" }
             <pre><code class="language-python">
 import requests
 
+job_id = '0x921A3D2ACF9926a4e199F56F405C2bEE6F208e4d'
+
 headers = {
-	'Authorization': 'Bearer ' + my_bearer_token
+    'Authorization': 'Bearer ' + API_KEY 
 }
 
-response = requests.post(f"{DCP_API_URL}/job/{job_id}/status", headers=headers)
+response = requests.get(f'{API_URL}/job/{job_id}/status', headers=headers)
 
 print(response)
             </pre></code>
