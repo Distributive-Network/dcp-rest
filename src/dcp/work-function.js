@@ -5,13 +5,13 @@ function setupWorkFunction(workObj)
   const workFunction = workObj.function;
   const language     = workObj.language;
 
-  if (['js', 'javascript', ''].includes(language))
+  if (['js', 'javascript', ''].includes(language.toLowerCase()))
     return { workFunction };
 
-  else if (['py', 'python'].includes(language))
+  else if (['py', 'python'].includes(language.toLowerCase()))
     return setupPython(workObj);
 
-  else if (['ts', 'typescript'].includes(language))
+  else if (['ts', 'typescript'].includes(language.toLowerCase()))
     return { workFunction: compileTypeScript(workFunction) };
 
   throw new Error(`DCP-API does not support ${language} yet.`);
