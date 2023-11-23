@@ -168,7 +168,7 @@ headers = {
     'Authorization': 'Bearer ' + API_KEY 
 }
 
-response = requests.get(f'{API_URL}/job/{job_id}/status', headers=headers)
+response = requests.get(f'{API_URL}/job/{job_id}', headers=headers)
 
 print(response.json())
             </pre></code>

@@ -70,7 +70,7 @@ router.get('/job/:id/result', async (req, res, next) => {
 });
 
 // job status
-router.get('/job/:id/status', async (req, res) => {
+router.get('/job/:id', async (req, res) => {
   const jobAddress = req.params.id;
   const jobStatus = await dcp.status(jobAddress, req.headers.authorization);
   res.send(jobStatus);

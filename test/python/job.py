@@ -79,7 +79,7 @@ def test_job_status():
     job_id = resp.json()["jobId"]
 
     # make status request
-    url = f'{API_URL}/job/{job_id}/status'
+    url = f'{API_URL}/job/{job_id}'
     resp = requests.get(url, headers=HEADERS)
 
     # check the status
@@ -106,7 +106,7 @@ def test_job_cancel():
     assert resp.status_code == 204
 
     # check if the status is cancelled
-    url = f'{API_URL}/job/{job_id}/status'
+    url = f'{API_URL}/job/{job_id}'
     resp = requests.get(url, headers=HEADERS)
 
     # check if the number of total slices is correct
@@ -154,7 +154,7 @@ def test_job_addslc():
     assert resp.status_code == 201
 
     # check if the total slices is 5 + 3
-    url = f'{API_URL}/job/{job_id}/status'
+    url = f'{API_URL}/job/{job_id}'
     resp = requests.get(url, headers=HEADERS)
 
     assert resp.json()['totalSlices'] == 5 + 3

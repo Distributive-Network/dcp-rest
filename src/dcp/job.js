@@ -73,7 +73,11 @@ class JobSpec
       job.requires(jobRequires);
 
     // set slice payment offer
-    this.slicePaymentOffer = options.slicePaymentOffer || compute.marketValue;
+    if (options.slicePaymentOffer === 'MARKET_VALUE')
+      this.slicePaymentOffer = compute.marketValue;
+    else
+      this.slicePaymentOffer = options.slicePaymentOffer || compute.marketValue;
+
     job.setPaymentAccountKeystore(options.bankKs);
   }
 

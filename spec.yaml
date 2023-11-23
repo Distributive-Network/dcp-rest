@@ -9,6 +9,7 @@ paths:
   /job:
     post:
       summary: Job - Deploy 
+      description: Deploys a job to the DCP scheduler for computation. Only required fields are <work> and <account>. Currently supported languages are JavaScript and TypeScript, but more are coming soon!
       requestBody:
         required: true
         content:
@@ -132,16 +133,6 @@ paths:
                   error:
                     type: string
                     description: A detailed error message.
-  /job/{jobId}/slices:
-    post:
-      summary: Job - Add Slices
-      description: Adds slices to a running job.
-      responses:
-        201:
-          description: Successfully added slices.
-        '404':
-          description: Job not found.
-  /job/{jobId}/status:
     get:
       summary: Job - Status 
       description: Retrieves the status of a specific job.
@@ -173,6 +164,16 @@ paths:
                         description: TODO
         '404':
           description: Job not found.
+  /job/{jobId}/slices:
+    post:
+      summary: Job - Add Slices
+      description: Adds slices to a running job.
+      responses:
+        201:
+          description: Successfully added slices.
+        '404':
+          description: Job not found.
+
   /job/{jobId}/result:
     get:
       summary: Job - Results
