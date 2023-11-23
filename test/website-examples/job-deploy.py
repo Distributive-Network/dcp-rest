@@ -26,20 +26,4 @@ headers = {
 response = requests.post(f"{API_URL}/job", json=data, headers=headers)
 
 print(response.json()) # { "jobId": "0x1234512345123451234512345123451234512345" }
-"""
-            </pre></code>
-        </div>
 
-        <p><strong><em>Getting the Status of a Job</em></strong></p>
-        <div class="code-block">
-            <pre><code class="language-python">
-import requests
-
-headers = {
-    'Authorization': 'Bearer ' + my_bearer_token
-}
-
-response = requests.post(f"{DCP_API_URL}/job/{job_id}/status", headers=headers)
-
-print(response)
-"""
