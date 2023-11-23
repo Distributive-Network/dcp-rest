@@ -48,11 +48,6 @@ paths:
                           type: array
                           items:
                             type: string
-                webHookUrls:
-                  type: array
-                  description: POST each result to servers as specified below
-                  items:
-                    type: string
                 args:
                   type: array
                   items:
