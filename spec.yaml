@@ -8,7 +8,7 @@ servers:
 paths:
   /job:
     post:
-      summary: Deploy a Job
+      summary: Job - Deploy 
       requestBody:
         required: true
         content:
@@ -132,9 +132,18 @@ paths:
                   error:
                     type: string
                     description: A detailed error message.
+  /job/{jobId}/slices:
+    post:
+      summary: Job - Add Slices
+      description: Adds slices to a running job.
+      responses:
+        201:
+          description: Successfully added slices.
+        '404':
+          description: Job not found.
   /job/{jobId}/status:
     get:
-      summary: Get a job's status
+      summary: Job - Status 
       description: Retrieves the status of a specific job.
       responses:
         '200':
@@ -166,7 +175,7 @@ paths:
           description: Job not found.
   /job/{jobId}/result:
     get:
-      summary: Get a job's results
+      summary: Job - Results
       description: Retrieves the results that have been completed so far.
       responses:
         200:
@@ -191,8 +200,15 @@ paths:
                         type: integer
                     activeSlices:
                         type: integer
-
-                    
+        '404':
+          description: Job not found.
+  /job/{jobId}:
+    delete:
+      summary: Job - Cancel
+      description: Cancels a running job, no more slices will be computed
+      responses:
+        204:
+          description: Successfully cancelled job.
         '404':
           description: Job not found.
 components:
