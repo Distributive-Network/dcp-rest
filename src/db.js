@@ -103,7 +103,22 @@ async function addWebhook(appId, servers)
   close(db); // don't await, just kick off the promise
 }
 
+async function addApiKey(randomString, keystore, email)
+{
+  // Create a new database or connect to an existing one
+  let db = await connect();
+
+  // Inserting data
+  let stmt = db.prepare("INSERT INTO users VALUES (?, ?, ?)");
+  stmt.run([email, randomString, keystore]);
+  stmt.finalize();
+
+  // Close the database connection
+  close(db); 
+}
+
 exports.getKeystore   = getKeystore;
 exports.addJobIdAppId = addJobIdAppId;
 exports.addWebhook    = addWebhook;
+exports.createKey     = addApiKey;
 

@@ -66,7 +66,7 @@ async function loginOAuth()
     token:    proxy.access_token,
     email:    proxy.email,
   };
-  const newAPIKey = await fetch('http://bestia.office.distributive.network/api/key',{
+  const rawAPIKey = await fetch('http://bestia.office.distributive.network/api/key',{
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -74,7 +74,19 @@ async function loginOAuth()
     body: JSON.stringify(proxyData),
   });
 
-  console.log(newAPIKey);
+  if (!rawAPIKey.ok)
+  {
+    document.getElementById('apikeypaste').innerHTML = 'ERROR: PLEASE TRY AGAIN...';
+    console.log(rawAPIKey);
+    console.log(await rawAPIKey.json());
+    return;
+  }
+
+  const apiKey = await rawAPIKey.json();
+  document.getElementById('apikeypaste').innerHTML = `Bearer ${apiKey.key}`;
+  document.getElementById('apikeytitle').innerHTML = 'API KEY:';
+
+  console.log(apiKey);
 
   return proxyData;
 }
@@ -232,8 +244,12 @@ h1, h2, h3{
         <p>In order to generate a new API token, click the button below. This will open a login box. Enter your DCP credentials here. Once you're logged in, you'll be redirected to an authorize page. Click Authorize and your api key will be created. This may take a few seconds. Please make sure popups are enabled on this site.
         <br>
         <br>
+        <p>NOTE: There is currently a limitation in DCP where proxy id keystores cannot deproxy job related ownership. This means you cannot use the api key generated to query the status of jobs deployed elsewhere, or from other api keys. This issue is currently being worked on by core and will be resolved in the future. In the meantime, this means you must use the same API key to manage jobs that you did to deploy them.
+        <br>
+        <br>
         <button onclick="main()">Generate New API Key</button>
         <div id="iframeContainer"></div>
+        <p id='apikeytitle'></p>
         <pre id="apikeypaste"></pre>
     </div>
 

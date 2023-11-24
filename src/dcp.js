@@ -49,7 +49,14 @@ async function getBankAccounts(reqBody, bearer)
 
 async function getBankAccountKeystores(idKs) 
 {
+
   const portalConnection = new protocol.Connection(dcpConfig.portal, idKs);
+
+  console.log("const response = await portalConnection.request('viewKeystores', {});");
+  const response = await portalConnection.request('viewKeystores', {});
+  console.log(response);
+  debugger;
+
   const { payload, success } = await portalConnection.request('viewKeystores', {});
 
   if (!success)

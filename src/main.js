@@ -10,10 +10,13 @@
 'use strict';
 const { config } = require('dotenv');
 const { expand } = require('dotenv-expand');
+const crypto = require('crypto');
 
 const dcp = require('./dcp');
 const path = require('path');
 const express = require('express');
+
+const db = require('./db');
 
 expand(config());
 expand(
@@ -105,11 +108,19 @@ router.get('/accounts', async (req, res) => {
 router.post('/key', async (req, res) => {
   const keystore = req.body.keystore;
   const password = req.body.token;
+  const email    = req.body.email;
 
   console.log(keystore);
   console.log(password);
 
-  res.send(`hello world~${password}`);
+  function generateRandomString(length) {
+    return crypto.randomBytes(Math.ceil(length / 2)).toString('hex').slice(0, length);
+  }
+  const apiKey = generateRandomString(20);
+
+  await db.createKey(apiKey, keystore, email);
+
+  res.send({ key: `${apiKey}.${password}` });
 });
 
 module.exports.router = router;

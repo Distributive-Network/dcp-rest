@@ -212,6 +212,29 @@ paths:
           description: Successfully cancelled job.
         '404':
           description: Job not found.
+  /accounts:
+    get:
+      summary: User - List Bank Accounts 
+      description: Retrieves a list of bank accounts associated with the user.
+      responses:
+        '200':
+          description: Successfully retrieved bank accounts. 
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                    name:
+                        type: string
+                        description: Name given to the banka ccount.
+                    address:
+                        type: string
+                        description: Hex address for the bank account, use this when deploying jobs.
+                    balance:
+                        type: string 
+                        description: The current balance in DCCs.
+        '404':
+          description: No user found.
 components:
   securitySchemes:
     bearerAuth:
