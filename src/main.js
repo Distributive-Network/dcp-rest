@@ -13,6 +13,7 @@ const { expand } = require('dotenv-expand');
 const crypto = require('crypto');
 
 const dcp = require('./dcp');
+const auth = require('./auth');
 const path = require('path');
 const express = require('express');
 
@@ -27,11 +28,12 @@ expand(
 );
 
 const router = express.Router();
+router.use(auth.middleWare);
 
 router.post('/job', async (req, res, next) => {
   try
   {
-    const jobId = await dcp.deployJobDCP(req.body, req.headers.authorization);
+    const jobId = await dcp.deployJobDCP(req);
     res.status(201).send({ jobId: jobId });
   }
   catch (error)
@@ -46,7 +48,7 @@ router.post('/job/:id/slices', async (req, res) => {
 
   try
   {
-    const addResponse = await dcp.addSlices(jobAddress, req.body, req.headers.authorization);
+    const addResponse = await dcp.addSlices(jobAddress, req);
     res.status(201).send(addResponse);
   }
   catch (error)
@@ -61,7 +63,7 @@ router.get('/job/:id/result', async (req, res, next) => {
   const jobAddress = req.params.id;
   try
   {
-    const results = await dcp.results(jobAddress, req.headers.authorization);
+    const results = await dcp.results(jobAddress, req);
     res.send(results);
   }
   catch (error)
@@ -75,37 +77,39 @@ router.get('/job/:id/result', async (req, res, next) => {
 // job status
 router.get('/job/:id', async (req, res) => {
   const jobAddress = req.params.id;
-  const jobStatus = await dcp.status(jobAddress, req.headers.authorization);
+  const jobStatus = await dcp.status(jobAddress, req);
   res.send(jobStatus);
 });
 
 // cancel a job
 router.delete('/job/:id', async (req, res) => {
   const jobAddress = req.params.id;
-  const jobCancellation = await dcp.cancelJob(jobAddress, req.body, req.headers.authorization) 
+  const jobCancellation = await dcp.cancelJob(jobAddress, req) 
   res.status(204).send(jobCancellation);
 });
 
 // lists all jobs owned by the requesting identity
 router.get('/jobs', async (req, res) => {
-  const jobList = await dcp.listJobs(req.headers.authorization);
+  const jobList = await dcp.listJobs(req);
   res.send(jobList);
 });
 
 // returns a number of all the jobs that have been deployed
 router.get('/jobs/count', async (req, res) => {
-  const jobNum = await dcp.countJobs(req.headers.authorization);
+  const jobNum = await dcp.countJobs(req);
   res.send({ jobCount: jobNum });
 });
 
 // returns all bank accounts associated with identity
 router.get('/accounts', async (req, res) => {
-  res.send(await dcp.getAccounts({}, req.headers.authorization));
+  res.send(await dcp.getAccounts(req));
 });
 
+// TODO: deprecate this endpoint
 // create an api key with an identity keystore... This is useful for the node oauth shim
 // It's unusual for an api to allow the creation of api keys, but whatever...
-router.post('/key', async (req, res) => {
+const unAuthorizedRouter = express.Router(); // add a new router for routes that don't need to be authed
+unAuthorizedRouter.post('/key', async (req, res) => {
   const keystore = req.body.keystore;
   const password = req.body.token;
   const email    = req.body.email;
@@ -124,4 +128,5 @@ router.post('/key', async (req, res) => {
 });
 
 module.exports.router = router;
+module.exports.unAuthorizedRouter = unAuthorizedRouter;
 
