@@ -1,33 +1,29 @@
 const bearerAuth   = require('./bearer');
-const identityAuth = require('./id');
+const basicAuth    = require('./basic');
 
-// decorates req with an `authorizedIdentity` property based on Bearer or id keystore authorization
+/**
+ * Returns a promise which decorates req with an `authorizedIdentity`
+ * property based on Bearer or id keystore authorization and calls
+ * the `next` callback.
+ */
 function authMiddleWare (req, res, next)
 {
+  var authFunction;
   const authHeader = req.headers.authorization;
 
-  debugger;
-
   if (authHeader && authHeader.startsWith('Bearer '))
-  {
-    return bearerAuth.getId(authHeader)
-      .then((id) => {
-        req.authorizedIdentity = id;
-        next();
-      })
-      .catch(err => res.status(401).json({ error: 'Unauthorized' }));
-  }
-  else if (req.body && req.body.identity)
-  {
-    return identityAuth.getId(req.body.identity.keystore, req.body.identity.passphrase)
-      .then((id) => {
-        req.authorizedIdentity = id;
-        next();
-      })
-      .catch(err => res.status(401).json({ error: 'Unauthorized' }));
-  }
+    authFunction = bearerAuth.getId;
+  else if (authHeader && authHeader.startsWith('Basic '))
+    authFunction = basicAuth.getId;
   else
     return res.status(401).json({ error: 'Authentication method not provided' });
+
+  return basicAuth.getId(authHeader)
+    .then((id) => {
+      req.authorizedIdentity = id;
+      next();
+    })
+    .catch(err => res.status(401).json({ error: 'Invalid identity keystore or password' }));
 }
 
 exports.middleWare = authMiddleWare;

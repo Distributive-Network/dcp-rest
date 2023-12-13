@@ -1,4 +1,8 @@
-// deploys a job with dcp and attempts to get its results from the pai
+/** 
+ * Smoke test for the job result endpoint. Deploys a job using
+ * dcp-client and gets the results using the dcp-rest.
+ */
+
 const dcpClient = require('dcp-client');
 const http = require('http');
 const assert = require('node:assert/strict');
@@ -60,47 +64,43 @@ async function getResults(jobId)
   const url = `http://localhost:1234/job/${jobId}/result`;
 
   const idKeystore = await wallet.getId();
+  const passphrase = '';
 
-  const body = {
-    identity: {
-      keystore: idKeystore.toJSON(),
-      passphrase: '',
-    },
-  };
+  const authHeaderCreds = btoa(`${JSON.stringify(idKeystore.toJSON())}:${passphrase}`);
+  const authHeader = `Basic ${authHeaderCreds}`;
 
-  return sendGetRequestWithBody(url, body);
+  console.log(authHeader);
+  console.log(atob(authHeaderCreds))
+
+  return httpsGetWithAuth(url, authHeader);
 }
 
-function sendGetRequestWithBody(url, body) {
-    return new Promise((resolve, reject) => {
-        const bodyString = JSON.stringify(body);
-        const options = {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(bodyString)
-            }
-        };
+function httpsGetWithAuth(url, authHeader)
+{
+  return new Promise((resolve, reject) => {
+    const options = {
+      headers: {
+        'Authorization': authHeader
+      }
+    };
 
-        const req = http.request(url, options, (res) => {
-            let responseString = '';
+    http.get(url, options, (response) => {
+      let data = '';
 
-            res.on('data', (chunk) => {
-                responseString += chunk;
-            });
+      // A chunk of data has been received.
+      response.on('data', (chunk) => {
+        data += chunk;
+      });
 
-            res.on('end', () => {
-                resolve(responseString);
-            });
-        });
+      // The whole response has been received. Print out the result.
+      response.on('end', () => {
+        resolve(data);
+      });
 
-        req.on('error', (e) => {
-            reject(e);
-        });
-
-        req.write(bodyString);
-        req.end();
+    }).on("error", (err) => {
+      reject(err);
     });
+  });
 }
 
 main();
