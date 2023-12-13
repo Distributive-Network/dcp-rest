@@ -1,0 +1,107 @@
+// deploys a job with dcp and attempts to get its results from the pai
+const dcpClient = require('dcp-client');
+const http = require('http');
+const assert = require('node:assert/strict');
+
+async function main()
+{
+  await dcpClient.init();
+  const wallet = require('dcp/wallet');
+  const compute = require('dcp/compute');
+
+  // deploy a job
+  const job = compute.for([1,2,3], (datum) => { progress(); return datum * datum; });
+  const resultsPromise = job.localExec();
+
+  // set event listeners
+  job.on('readystatechange', console.log);
+  job.on('result', console.log);
+
+  // wait for the job to deploy
+  const id = await new Promise((resolve, reject) => {
+    job.on('accepted', () => { resolve(job.id); }); // resolve when job deployed
+    setTimeout(reject, 60 * 1000); // give up if not deployed within 60 seconds
+  });
+
+  // attempt to get the results of the job once its been deployed
+  console.log(id);
+  console.log(await getResults(id));
+
+  //await for the job to complete and check that the results match
+  const resultsFromClient = await resultsPromise;
+  const resultsFromHttpApi = await getResults(id);
+
+  // print for verbosity
+  console.log(resultsFromClient);
+  console.log(JSON.parse(resultsFromHttpApi));
+
+  // check that the array lengths are the same
+  assert(resultsFromClient.length === JSON.parse(resultsFromHttpApi).results.length);
+
+  // check that the results match!
+  for (const apiResult of JSON.parse(resultsFromHttpApi).results)
+  {
+    const sliceNumber = apiResult['sliceNumber'];
+    if (!resultsFromClient[sliceNumber - 1] === apiResult.value)
+    {
+      console.err('results mismatch between results from job.exec and api call');
+      process.exit(13);
+    }
+  }
+
+  // all tests successful
+  console.log('test passed');
+  process.exit(0); 
+}
+
+async function getResults(jobId)
+{
+  const wallet = require('dcp/wallet');
+  const url = `http://localhost:1234/job/${jobId}/result`;
+
+  const idKeystore = await wallet.getId();
+
+  const body = {
+    identity: {
+      keystore: idKeystore.toJSON(),
+      passphrase: '',
+    },
+  };
+
+  return sendGetRequestWithBody(url, body);
+}
+
+function sendGetRequestWithBody(url, body) {
+    return new Promise((resolve, reject) => {
+        const bodyString = JSON.stringify(body);
+        const options = {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(bodyString)
+            }
+        };
+
+        const req = http.request(url, options, (res) => {
+            let responseString = '';
+
+            res.on('data', (chunk) => {
+                responseString += chunk;
+            });
+
+            res.on('end', () => {
+                resolve(responseString);
+            });
+        });
+
+        req.on('error', (e) => {
+            reject(e);
+        });
+
+        req.write(bodyString);
+        req.end();
+    });
+}
+
+main();
+
