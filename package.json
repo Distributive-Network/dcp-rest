@@ -2,7 +2,7 @@
   "dependencies": {
     "client-oauth2": "^4.3.3",
     "cors": "^2.8.5",
-    "dcp-client": "^4.3.4",
+    "dcp-client": "^4.3.5",
     "dcp-util": "^2.2.28",
     "dcp-worker": "^3.2.34",
     "dotenv": "^16.3.1",
