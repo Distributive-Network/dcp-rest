@@ -147,6 +147,9 @@ paths:
     get:
       summary: Job - Results
       description: Retrieves the results that have been completed so far.
+      security:
+        - basicAuth: []
+        - bearerAuth: []
       parameters:
         - in: query
           name: range
@@ -245,7 +248,12 @@ components:
   securitySchemes:
     bearerAuth:
       type: http
-      scheme: bearer
+      description: "Use your dcp-rest api token"
+      scheme: Bearer <dcp-rest api token>
+    basicAuth:
+      type: http
+      scheme: Basic <idkeystore:idkeystorepassword>
+      description: "Create a header consisting of an id keystore and the password to it. Encode that in base 64 and prepend it with `Basic `. For example: `Basic ${btoa('idKeystoreJSON' + ':' + 'idKeystorePassword'}`. This lets you use any id keystore you want to make requests to supported dcp-rest endpoints."
 security:
   - bearerAuth: []
 
