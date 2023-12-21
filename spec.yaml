@@ -147,6 +147,12 @@ paths:
     get:
       summary: Job - Results
       description: Retrieves the results that have been completed so far.
+      parameters:
+        - in: query
+          name: range
+          schema:
+            type: string
+          description: (Optional). Inclusive range from m to n. For example `?range=1-10&range=15-17` would attempt to fetch the values [1,10] ∪ [15,17]. If no range is specified, it attempts to fetch all slices.
       responses:
         200:
           description: Successfully retrieved job result.
