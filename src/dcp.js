@@ -94,16 +94,31 @@ async function addSlices(jobAddress, request)
 }
 
 // get results
-async function results(jobAddress, request)
+async function results(jobAddress, request, range=undefined)
 {
-  // caveat with the id... can only use it for jobs deployed with this oauth token, this is bad - but whatever
-  // it will change in the future when we have identity figured out on the dcp side
   const idKs = await request.authorizedIdentity;
+  const Range = require('dcp/range-object').RangeObject;
+  const MultiRange = require('dcp/range-object').MultiRangeObject;
+  const SparseRange = require('dcp/range-object').SparseRangeObject;
+
+  if (request.params.sliceNumber)
+    range = new Range(parseInt(request.params.sliceNumber),parseInt(request.params.sliceNumber));
+
+  else if (request.query.range)
+  {
+    if (typeof request.query.range === 'string')
+      request.query.range = [request.query.range];
+    const ranges = request.query.range.map((rangeStr) => {
+      const [start, stop] = rangeStr.split('-');
+      return new Range(parseInt(start), parseInt(stop));
+    });
+    range = new SparseRange(new MultiRange(ranges));
+  }
 
   // get the status and currently completed results for the job
   const jh = new JobHandle(jobAddress, idKs);
   const jobStatus  = await jh.status();
-  const jobResults = await jh.fetchResults();
+  const jobResults = await jh.fetchResults(range);
 
   // respond with a nice object that contains the total slices completed and an array of them
   const response = {};

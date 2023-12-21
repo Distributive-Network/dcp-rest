@@ -61,6 +61,24 @@ router.post('/job/:id/slices', async (req, res) => {
 // return job results
 router.get('/job/:id/result', async (req, res, next) => {
   const jobAddress = req.params.id;
+  const ranges = req.query.range;
+  const ignoreFetchFailure = req.query.ignoreFetchFailure === 'true';
+  try
+  {
+    const results = await dcp.results(jobAddress, req);
+    res.send(results);
+  }
+  catch (error)
+  {
+    console.log(error);
+    res.status(error.status);
+    next(error);
+  }
+});
+
+router.get('/job/:id/result/:sliceNumber', async (req, res, next) => {
+  const jobAddress = req.params.id;
+  const sliceNumber = req.params.sliceNumber;
   try
   {
     const results = await dcp.results(jobAddress, req);

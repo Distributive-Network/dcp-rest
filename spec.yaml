@@ -10,6 +10,8 @@ paths:
     post:
       summary: Job - Deploy 
       description: Deploys a job to the DCP scheduler for computation. Only required fields are <work> and <account>. Currently supported languages are JavaScript and TypeScript, but more are coming soon!
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -147,6 +149,12 @@ paths:
     get:
       summary: Job - Results
       description: Retrieves the results that have been completed so far.
+      parameters:
+        - in: query
+          name: range
+          schema:
+            type: string
+          description: (Optional). Inclusive range from m to n. For example `?range=1-10&range=15-17` would attempt to fetch the values [1,10] ∪ [15,17]. If no range is specified, it attempts to fetch all slices.
       responses:
         200:
           description: Successfully retrieved job result.
@@ -239,7 +247,13 @@ components:
   securitySchemes:
     bearerAuth:
       type: http
-      scheme: bearer
+      description: "Use your dcp-rest api token"
+      scheme: Bearer <dcp-rest api token>
+    basicAuth:
+      type: http
+      scheme: Basic <idkeystore:idkeystorepassword>
+      description: "Create a header consisting of an id keystore and the password to it. Encode that in base 64 and prepend it with `Basic `. For example: `Basic ${btoa('idKeystoreJSON' + ':' + 'idKeystorePassword'}`. This lets you use any id keystore you want to make requests to supported dcp-rest endpoints."
 security:
   - bearerAuth: []
+  - basicAuth: []
 
