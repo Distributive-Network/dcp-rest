@@ -28,9 +28,9 @@ async function unlockBankAccount(bankAccounts, address, password)
 }
 
 // get the accounts associated with the portal user
-async function getBankAccounts(reqBody, bearer)
+async function getBankAccounts(request)
 {
-  const idKs = await getOAuthId(bearer);
+  const idKs = await request.authorizedIdentity;
   const bankAccounts = [];
 
   // parse through and only return a list of objects with name and address
@@ -49,38 +49,29 @@ async function getBankAccounts(reqBody, bearer)
 
 async function getBankAccountKeystores(idKs) 
 {
-
   const portalConnection = new protocol.Connection(dcpConfig.portal, idKs);
-
-  console.log("const response = await portalConnection.request('viewKeystores', {});");
   const response = await portalConnection.request('viewKeystores', {});
-  console.log(response);
-  debugger;
-
   const { payload, success } = await portalConnection.request('viewKeystores', {});
 
   if (!success)
     throw new HttpError('Request to viewKeystores failed');
 
-  console.log(payload);
-
   return payload;
 }
 
 
-async function deployJobDCP(reqBody, bearer)
+async function deployJobDCP(req)
 {
-  const options = reqBody;
+  const options = req.body;
 
-  const bankAddress = reqBody.account.address;
-  const bankPassword = reqBody.account.password;
+  const bankAddress = req.body.account.address;
+  const bankPassword = req.body.account.password;
 
-  // specify the ID keystore for the job
-  const oauthId = await getOAuthId(bearer); // TODO - this hangs if oauthID is invalid
-  wallet.addId(oauthId);
+  const idKeystore = await req.authorizedIdentity;
+  wallet.addId(idKeystore);
 
   // unlock and set the banka ccount
-  const accounts = await getBankAccountKeystores(oauthId);
+  const accounts = await getBankAccountKeystores(idKeystore);
   const bankKs = await unlockBankAccount(accounts, bankAddress, bankPassword);
   if (bankKs === null)
     throw new HttpError(`DCP bank account ${bankAddress} not found`);
@@ -91,22 +82,23 @@ async function deployJobDCP(reqBody, bearer)
 }
 
 // append slices to a running job
-async function addSlices(jobAddress, reqBody, bearer)
+async function addSlices(jobAddress, request)
 {
-  const idKs = await getOAuthId(bearer);
+  const idKs = await request.authorizedIdentity;
+
 
   // try to add slices to the job
   const jh = new JobHandle(jobAddress, idKs);
 
-  return jh.add(reqBody.sliceData);
+  return jh.add(request.body.sliceData);
 }
 
 // get results
-async function results(jobAddress, bearer)
+async function results(jobAddress, request)
 {
   // caveat with the id... can only use it for jobs deployed with this oauth token, this is bad - but whatever
   // it will change in the future when we have identity figured out on the dcp side
-  const idKs = await getOAuthId(bearer);
+  const idKs = await request.authorizedIdentity;
 
   // get the status and currently completed results for the job
   const jh = new JobHandle(jobAddress, idKs);
@@ -124,9 +116,9 @@ async function results(jobAddress, bearer)
 }
 
 // get status
-async function status(jobAddress, bearer)
+async function status(jobAddress, request)
 {
-  const idKs = await getOAuthId(bearer);
+  const idKs = await request.authorizedIdentity;
   const jh = new JobHandle(jobAddress, idKs);
   const jobStatus = await jh.status();
 
@@ -143,22 +135,23 @@ async function status(jobAddress, bearer)
 }
 
 // cancel a job
-async function cancelJob(jobAddress, reqBody, bearer)
+async function cancelJob(jobAddress, request)
 {
-  const idKs = await getOAuthId(bearer);
+  const idKs = await request.authorizedIdentity;
   const jh = new JobHandle(jobAddress, idKs);
-  return jh.cancel(reqBody.reason);
+  return jh.cancel(request.body.reason);
 }
 
-async function countJobs(bearer)
+async function countJobs(request)
 {
-  const jobs = await listJobs(bearer);
+  const idKs = await request.authorizedIdentity;
+  const jobs = await listJobs(idKs);
   return jobs.length;
 }
 
-async function listJobs(bearer)
+async function listJobs(request)
 {
-  const idKs = await getOAuthId(bearer);
+  const idKs = await request.authorizedIdentity;
   const phemeConnection = new protocol.Connection(dcpConfig.scheduler.services.pheme.location, idKs);
 
   const requestPayload = {
@@ -170,6 +163,7 @@ async function listJobs(bearer)
   return payload;
 }
 
+/*
 async function getPendingPayment(reqBody, bearer)
 {
   const accounts = await getBankAccounts(reqBody, bearer);
@@ -178,7 +172,7 @@ async function getPendingPayment(reqBody, bearer)
   // Make signed message to confirm ownership of keystore
   const signedMessage = await bankKs.makeSignedMessage({ address: bankKs.address });
 
-  const idKs = await getOAuthId(bearer);
+  const idKs = await request.authorizedIdentity;
   const phemeConnection = new protocol.Connection(dcpConfig.scheduler.services.pheme.location, idKs);
   const bankTellerConnection = new protocol.Connection(dcpConfig.bank.services.bankTeller.location, idKs);
 
@@ -204,32 +198,17 @@ async function getPendingPayment(reqBody, bearer)
 
   return totalPendingPayments;
 }
+*/
 
 // auth
 async function getOAuthId(bearer)
 {
-  const tokenStr = bearer.split('Bearer ')[1];
-  const tokenHalves = tokenStr.split('.');
-  const apiKey = tokenHalves[0];
-  const ksPassword = tokenHalves[1];
-
-  // db or cache call to get the keystore associated with the user based on what they sent.
-  const keystore = await db.getKeystore(apiKey);
-
-  wallet.passphrasePrompt = (message) => {
-    return ksPassword;
-  };
-
-  const idKs = await new wallet.IdKeystore(keystore);
-
-  await idKs.unlock(ksPassword, 1000, true);
-
-  return idKs;
+  return await require('./auth/bearer').getId(bearer);
 }
 
-async function getIdentity(bearer)
+async function getIdentity(request)
 {
-  const idKs = await getOAuthId(bearer);
+  const idKs = await request.authorizedIdentity;
   const portalConnection = new protocol.Connection(dcpConfig.portal, idKs);
   const response = await portalConnection.request('getUserInfo', {});
 

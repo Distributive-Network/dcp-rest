@@ -194,7 +194,7 @@ class JobHandle
       operation: 'fetchResult',
       data: {
         job: this.address,
-        owner: this.idKs.address,
+        owner: this.idKs.address, 
         range,
       }
     };
@@ -229,16 +229,17 @@ class JobHandle
       operation: 'fetchJobReport',
       data: {
         job:      this.address,
-        jobOwner: this.#identityAddress,
+        jobOwner: this.idKs.address,
       }
     };
 
     const request = new this.phemeConnection.Request(body, this.idKs);
-    const { success, payload } = await this.phemeConnection.send(request);
+    const data = await this.phemeConnection.send(request);
+    const success = data.success;
 
     if (!success)
       throw new HttpError(`Request to fetchJobReport failed for job ${this.address}`);
-    return payload;
+    return data.payload;
   }
 
   /**
@@ -246,7 +247,6 @@ class JobHandle
    */
   async cancel(reason)
   {
-    debugger;
     const request = new this.jobSubmitConnection.Request({ operation: 'cancelJob', data: {
       job: this.address,
       reason,
