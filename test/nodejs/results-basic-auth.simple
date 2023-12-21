@@ -13,6 +13,10 @@ async function main()
   const wallet = require('dcp/wallet');
   const compute = require('dcp/compute');
 
+  // create id keystore
+  const idKeystore = await new wallet.Keystore(null, '');
+  wallet.addId(idKeystore);
+
   // deploy a job
   const job = compute.for([1,2,3], (datum) => { progress(); return datum * datum; });
   const resultsPromise = job.localExec();
@@ -29,11 +33,11 @@ async function main()
 
   // attempt to get the results of the job once its been deployed
   console.log(id);
-  console.log(await getResults(id));
+  console.log(await getResults(id, idKeystore, ''));
 
   //await for the job to complete and check that the results match
   const resultsFromClient = await resultsPromise;
-  const resultsFromHttpApi = await getResults(id);
+  const resultsFromHttpApi = await getResults(id, idKeystore, '');
 
   // print for verbosity
   console.log(resultsFromClient);
@@ -58,15 +62,12 @@ async function main()
   process.exit(0); 
 }
 
-async function getResults(jobId)
+async function getResults(jobId, idKeystore, idKeystorePassword)
 {
   const wallet = require('dcp/wallet');
   const url = `http://localhost:1234/job/${jobId}/result`;
 
-  const idKeystore = await wallet.getId();
-  const passphrase = '';
-
-  const authHeaderCreds = btoa(`${JSON.stringify(idKeystore.toJSON())}:${passphrase}`);
+  const authHeaderCreds = btoa(`${JSON.stringify(idKeystore.toJSON())}:${idKeystorePassword}`);
   const authHeader = `Basic ${authHeaderCreds}`;
 
   console.log(authHeader);
