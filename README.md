@@ -40,6 +40,10 @@ Example request:
 ```
 *^ Will return the results for slices 1 to 10 and 33 to 35*
 
+Example Postman request:
+![image](https://github.com/Distributive-Network/dcp-rest/assets/18359452/3c785421-6d90-4b88-9951-d639dd5899e0)
+
+
 ### Job Status
 Path: `/job/[id]/status`
 Method: `GET`
@@ -80,7 +84,9 @@ docker run -p 1234:1234 dcp-rest
 
 ## Roadmap
 Primary items on the roadmap
+- add better examples
 - create an oauth app for api key generation
 - add better error handling and error responses
 - add support for Python and R in work functions (Python will be easy / might work already)
+- ci 
 
