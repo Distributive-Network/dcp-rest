@@ -3,8 +3,7 @@ info:
   version: 1.0.0
   title: Restful DCP API Documentation
 servers:
-  - url: http://bestia.office.distributive.network/api/
-  - url: http://rhea.office.distributive.network/api/
+  - url: http://localhost:1234/api/v0/
 paths:
   /job:
     post:

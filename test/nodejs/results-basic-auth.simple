@@ -65,7 +65,7 @@ async function main()
 async function getResults(jobId, idKeystore, idKeystorePassword)
 {
   const wallet = require('dcp/wallet');
-  const url = `http://localhost:1234/job/${jobId}/result`;
+  const url = `http://localhost:1234/api/v0/job/${jobId}/result`;
 
   const authHeaderCreds = btoa(`${JSON.stringify(idKeystore.toJSON())}:${idKeystorePassword}`);
   const authHeader = `Basic ${authHeaderCreds}`;

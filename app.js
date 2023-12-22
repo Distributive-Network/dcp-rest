@@ -7,7 +7,6 @@
  * @author Will Pringle <will@distributive.network>
  * @date November 2023
  */
-
 'use strict';
 
 const express = require('express');
@@ -20,14 +19,8 @@ const dcpInit = require('./src/dcp/init').init;
 function setUpExpressServer()
 {
   const routes = require('./src/main').router;
-
   const app = express();
-
   const OpenApiValidator = require('express-openapi-validator');
-
-
-  // load environment variables
-//  require('./db/load-env.js');
 
   app.use(express.json());
   app.use(express.text());
@@ -40,11 +33,8 @@ function setUpExpressServer()
 
   // routes
   app.use(express.static('public'));
-
-  app.use('/', routes);
-
+  app.use('/api/v0/', routes);
   app.use('/spec', express.static(spec));
-
   app.use(
     OpenApiValidator.middleware({
       apiSpec: './spec.yaml',
