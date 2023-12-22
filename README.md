@@ -1,6 +1,12 @@
 # restful-dcp
 REST API FOR DCP
 
+build and run
+```
+docker build -t dcp-rest .
+docker run -p 1234:1234 dcp-rest
+```
+
 ---
 API
 # DCP HTTP API
