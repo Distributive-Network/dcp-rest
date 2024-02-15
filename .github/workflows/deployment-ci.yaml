@@ -24,4 +24,6 @@ jobs:
           file: ./Dockerfile
           platforms: linux/arm64,linux/amd64
           push: true
-          tags: ghcr.io/distributive-network/dcp-rest:${{ github.ref_name }}
+          tags: |
+            ghcr.io/distributive-network/dcp-rest:${{ github.ref_name }}
+            ghcr.io/distributive-network/dcp-rest:latest
