@@ -10,23 +10,6 @@ const protocol = require('dcp/protocol');
 const wallet = require('dcp/wallet');
 const dcpConfig = require('dcp/dcp-config');
 
-// unlock bank account
-async function unlockBankAccount(bankAccounts, address, password)
-{
-  // try to find the account in the list of bankAccounts
-  for (const i in bankAccounts)
-  {
-    if (wallet.Address(bankAccounts[i].address).eq(address))
-    {
-      const ks = await new wallet.Keystore(bankAccounts[i]);
-      await ks.unlock(password, 1000, true);
-      return ks;
-    }
-  }
-
-  return null;
-}
-
 // get the accounts associated with the portal user
 async function getBankAccounts(request)
 {
@@ -44,6 +27,9 @@ async function getBankAccounts(request)
     });
   }
 
+  if (bankAccounts.length === 0)
+    throw new HttpError(`No payment accounts associated with identity ${idKs.address}`);
+
   return bankAccounts;
 }
 
@@ -59,23 +45,40 @@ async function getBankAccountKeystores(idKs)
   return payload;
 }
 
-
 async function deployJobDCP(req)
 {
+  var bankKeystore;
   const options = req.body;
-
-  const bankAddress = req.body.account.address;
-  const bankPassword = req.body.account.password;
+  const account = req.body.account;
 
   const idKeystore = await req.authorizedIdentity;
   wallet.addId(idKeystore);
 
-  // unlock and set the banka ccount
-  const accounts = await getBankAccountKeystores(idKeystore);
-  const bankKs = await unlockBankAccount(accounts, bankAddress, bankPassword);
-  if (bankKs === null)
-    throw new HttpError(`DCP bank account ${bankAddress} not found`);
-  options.bankKs = bankKs;
+  // if the bank account json is passed in its entirety, don't use oauth
+  if (req.body.account.json)
+    bankKeystore = await new wallet.Keystore(req.body.account.json);
+  else
+  {
+    const portalBankAccounts = await getBankAccountKeystores(idKeystore);
+
+    function finderCmp(ks)
+    {
+      if (account.address)
+        return wallet.Address(ks.address).eq(address);
+      else if (account.label)
+        return ks.label === account.label || ks.label === account.name;
+      else
+        throw new HttpError('No payment account information provided');
+    }
+
+    bankKeystore = portalBankAccounts.find(finderCmp);
+  }
+
+  await bankKeystore.unlock(account.password, 1000, true);
+
+  if (!bankKeystore)
+    throw new HttpError(`Cannot find a matching payment account with identity ${idKeystore.address}`);
+  options.bankKs = bankKeystore;
 
   const jobSpec = new JobSpec(options);
   return await jobSpec.deploy();
