@@ -3,14 +3,13 @@ info:
   version: 1.0.0
   title: Restful DCP API Documentation
 servers:
+  - url: https://dcp-rest.diana.distributive.network/api/v0/
   - url: http://localhost:1234/api/v0/
 paths:
   /job:
     post:
       summary: Job - Deploy 
-      description: Deploys a job to the DCP scheduler for computation. Only required fields are <work> and <account>. Currently supported languages are JavaScript and TypeScript, but more are coming soon!
-      security:
-        - bearerAuth: []
+      description: Deploys a job to the DCP scheduler for computation. Only required fields are <work> and <account>. Currently supported Worktimes are map-basic and pyodide, but more are coming soon!
       requestBody:
         required: true
         content:
@@ -21,23 +20,37 @@ paths:
                 work:
                   type: object
                   properties:
-                    language:
-                      type: string
-                      enum: ['JavaScript', 'TypeScript']
+                    runtime:
+                      type: object 
+                      description: The Worktime specified for the job to execute in (for example Pyodide)
+                      properties:
+                        name:
+                          type: string
+                        version:
+                          type: string
+                        custom:
+                          type: boolean
+                      required:
+                        - name
                     function:
                       type: string
                   required:
-                    - language
+                    - runtime 
                     - function
                 account:
                   type: object
                   properties:
                     address:
                       type: string
+                      description: Oauth-Identity flow-> Portal Payment Account Address
+                    label:
+                      type: string
+                      description: Oauth-Identity flow-> Portal Payment Account Name
+                    json:
+                      type: string
+                      description: Non Oauth-Identity flow-> An arbitrary payment account keystore
                     password:
                       type: string
-                  required:
-                    - address
                 slices:
                   oneOf:
                     - type: array
