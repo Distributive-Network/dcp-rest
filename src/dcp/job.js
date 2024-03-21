@@ -78,7 +78,7 @@ class JobSpec
     }
 
     if (jobPackages.length > 0)
-      job.requires(jobRequires);
+      job.requires(jobPackages);
 
     // set slice payment offer
     if (options.slicePaymentOffer === 'MARKET_VALUE')
