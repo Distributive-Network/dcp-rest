@@ -12,7 +12,7 @@
 const kvin = require('kvin');
 
 const HttpError = require('../error').HttpError;
-const workFunctionTransformer = require('./work-function');
+const worktimes = require('./worktime-setup');
 const webhooks = require('../webhooks/lib');
 
 const compute        = require('dcp/compute');
@@ -40,10 +40,12 @@ class JobSpec
    */
   constructor(options)
   {
-    // validate work function and transform it if required
-    const work = workFunctionTransformer.setup(options.work);
-    this.workFunction = work.workFunction;
-    const additionalRequires = work.requires || [];
+    // shape the job into something which matches the worktime
+    const workSpec = worktimes.setup(options); // needs options.work and options.args
+    this.workFunction  = workSpec.function;
+    const jobArgs      = workSpec.args;
+    const jobPackages  = (workSpec.packages || []).concat(options.packages || []);
+    const jobWorktime  = workSpec.worktime;
 
     // use the this.#jobRef variable to store a reference to job
     const job = compute.for(options.slices || [], this.workFunction, options.args);
@@ -53,9 +55,18 @@ class JobSpec
     job.public        = options.public        || { name: 'Restfully helping make the world smarter' };
     job.autoClose     = false; // all jobs deployed by dcp-rest are open by default.
 
+    if (jobWorktime)
+    {
+      if (jobWorktime.name) job.worktime        = jobWorktime.name;
+      if (jobWorktime.name) job.worktimeVersion = jobWorktime.version;
+      if (jobWorktime.name) job.customWorktime  = jobWorktime.custom;
+    }
+
     // webhook: TODO drop this functionality later
     if (options.webHookUrls)
     {
+      throw new HttpError("WebHooks are no longer supported in dcp-rest");
+/*
       // TODO check if webHookUrls is empty
       this.appIdPromise = webhooks.setJobWebhookServers(options.webHookUrls);
       this.appidPromise.then((appId) => {
@@ -63,14 +74,11 @@ class JobSpec
       }).then((jobUrl) => {
         job.setResultStorage(new URL(jobUrl), {});
       });
+*/
     }
 
-    // add requirements to the job TODO: clean this up
-    let jobRequires = options.packages || [];
-    jobRequires = jobRequires.concat(additionalRequires);
-
-    if ((options.packages && options.packages.length > 0) || (additionalRequires && additionalRequires.length > 0))
-      job.requires(jobRequires);
+    if (jobPackages.length > 0)
+      job.requires(jobPackages);
 
     // set slice payment offer
     if (options.slicePaymentOffer === 'MARKET_VALUE')
