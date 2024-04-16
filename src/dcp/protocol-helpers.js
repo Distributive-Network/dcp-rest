@@ -41,7 +41,6 @@ async function sendOnce(serviceName, method, identity, body, authKs)
   const serviceLocation = services[serviceName];
   const conn = new Connection(serviceLocation, { identity });
 
-  //const response = await conn.request(method, body);
   const message = new conn.Request({
     operation: method,
     data: body
