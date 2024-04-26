@@ -1,7 +1,7 @@
 /**
  * @file job.js
  *
- * Class to help manage and define jobs.
+ * Classes to help manage and define jobs.
  *
  * @author Will Pringle <will@distributive.network>
  * @date November 2023
@@ -13,18 +13,16 @@ const kvin = require('kvin');
 
 const HttpError = require('../error').HttpError;
 const worktimes = require('./worktime-setup');
+const sendOnce  = require('./protocol-helpers').sendOnce;
 const webhooks = require('../webhooks/lib');
 
 const compute        = require('dcp/compute');
 const dcpConfig      = require('dcp/dcp-config');
-const protocol       = require('dcp/protocol');
 const wallet         = require('dcp/wallet');
 const addSlices      = require('dcp/job').addSlices;
 const fetchResults   = require('dcp/job').fetchResults;
 const rehydrateRange = require('dcp/range-object').rehydrateRange;
 const fetchURI       = require('dcp/utils').fetchURI;
-const Connection     = require('dcp/protocol-v4').Connection;
-
 
 /**
  * Specifies a job and contains a deploy method.
@@ -130,16 +128,8 @@ class JobHandle
    */
   constructor(jobId, idKeystore, idPassword)
   {
-    // check if the job exists
-    // TODO check if the job exists before doing anything... whats the easiest way to do that?
-
     this.address    = new wallet.Address(jobId);
     this.idKs       = idKeystore;
-
-    // connections - TODO wrap connections in generic getter that will automatically reconnect if they're down
-    this.phemeConnection           = new protocol.Connection(dcpConfig.scheduler.services.pheme.location,           this.idKs);
-    this.resultSubmitterConnection = new protocol.Connection(dcpConfig.scheduler.services.resultSubmitter.location, this.idKs);
-    this.jobSubmitConnection       = new protocol.Connection(dcpConfig.scheduler.services.jobSubmit.location,       this.idKs);
   }
 
   /**
@@ -156,26 +146,16 @@ class JobHandle
    */
   async add(newSlices)
   {
-    const identitykeystore = this.idKs;
-    const jobSubmitConnection = new Connection(dcpConfig.scheduler.services.jobSubmit, identitykeystore, { allowBatch: false });
-
     if (!(newSlices instanceof Array))
       throw new HttpError(`${newSlices} is not an instance of an Array`);
 
-    const encodedJsonData = {
+    const body = {
       job: this.address,
       dataValues: kvin.marshal(newSlices),
     };
 
-    const body = {
-      operation: 'addSliceData',
-      jsonData: JSON.stringify(encodedJsonData),
-    };
-
-    const request = new jobSubmitConnection.Request(body, this.idKs);
-    const { success, payload } = await request.send();
-
-    jobSubmitConnection.close();
+    const response = await sendOnce('jobSubmit', 'addSliceData', this.idKs, body);
+    const { success, payload } = response;
 
     if (!success)
       throw new HttpError(`Failure to upload slices for job ${this.address}`);
@@ -199,16 +179,13 @@ class JobHandle
       range = rehydrateRange(rangeObject);
 
     const body = {
-      operation: 'fetchResult',
-      data: {
-        job: this.address,
-        owner: this.idKs.address, 
-        range,
-      }
+      job: this.address,
+      owner: this.idKs.address,
+      range,
     };
 
-    const request = new this.resultSubmitterConnection.Request(body, this.idKs);
-    const { success, payload } = await this.resultSubmitterConnection.send(request);
+    const response = await sendOnce('resultSubmitter', 'fetchResult', this.idKs, body, this.idKs);
+    const { success, payload } = response;
 
     if (!success)
       throw new HttpError(`Cannot get results for job ${this.address.address}`);
@@ -234,20 +211,15 @@ class JobHandle
   async status()
   {
     const body = {
-      operation: 'fetchJobReport',
-      data: {
-        job:      this.address,
-        jobOwner: this.idKs.address,
-      }
+      job:      this.address,
+      jobOwner: this.idKs.address,
     };
 
-    const request = new this.phemeConnection.Request(body, this.idKs);
-    const data = await this.phemeConnection.send(request);
-    const success = data.success;
+    const response = await sendOnce('pheme', 'fetchJobReport', this.idKs, body);
 
-    if (!success)
+    if (!response.success)
       throw new HttpError(`Request to fetchJobReport failed for job ${this.address}`);
-    return data.payload;
+    return response.payload;
   }
 
   /**
@@ -255,17 +227,16 @@ class JobHandle
    */
   async cancel(reason)
   {
-    const request = new this.jobSubmitConnection.Request({ operation: 'cancelJob', data: {
+    const body = {
       job: this.address,
       reason,
-    }}, this.idKs);
+    };
+    const response = await sendOnce('jobSubmit', 'cancelJob', this.idKs, body);
 
-    const { success, payload } = await this.jobSubmitConnection.send(request);
-
-    if (!success)
+    if (!response.success)
       throw new HttpError(`Unable to cancel job ${this.address}`);
 
-    return payload;
+    return response.payload;
   }
 }
 
