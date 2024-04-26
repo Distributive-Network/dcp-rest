@@ -4,6 +4,7 @@ const webhooks = require('./webhooks/lib');
 const HttpError = require('./error').HttpError;
 const JobSpec   = require('./dcp/job').JobSpec;
 const JobHandle = require('./dcp/job').JobHandle;
+const sendOnce  = require('./dcp/protocol-helpers').sendOnce;
 
 // dcp specific imports
 const protocol = require('dcp/protocol');
@@ -35,9 +36,7 @@ async function getBankAccounts(request)
 
 async function getBankAccountKeystores(idKs) 
 {
-  const portalConnection = new protocol.Connection(dcpConfig.portal, idKs);
-  const response = await portalConnection.request('viewKeystores', {});
-  const { payload, success } = await portalConnection.request('viewKeystores', {});
+  const { payload, success } = await sendOnce('portal', 'viewKeystores', idKs);
 
   if (!success)
     throw new HttpError('Request to viewKeystores failed');
@@ -170,13 +169,10 @@ async function countJobs(request)
 async function listJobs(request)
 {
   const idKs = await request.authorizedIdentity;
-  const phemeConnection = new protocol.Connection(dcpConfig.scheduler.services.pheme.location, idKs);
-
-  const requestPayload = {
+  const body = {
     statuses: ['cancelled', 'corrupted', 'estimation', 'finished', 'running', 'paused', 'new']
   };
-
-  const { success, payload } = await phemeConnection.request('listJobs', requestPayload);
+  const { success, payload } = await sendOnce('pheme', 'listJobs', idKs, body);
 
   return payload;
 }
@@ -227,9 +223,7 @@ async function getOAuthId(bearer)
 async function getIdentity(request)
 {
   const idKs = await request.authorizedIdentity;
-  const portalConnection = new protocol.Connection(dcpConfig.portal, idKs);
-  const response = await portalConnection.request('getUserInfo', {});
-
+  const response = await sendOnce('portal', 'getUserInfo', idKs);
   return response.payload.id;
 }
 
